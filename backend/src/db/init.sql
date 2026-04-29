@@ -23,3 +23,11 @@ VALUES (
   '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
   'admin'
 ) ON CONFLICT DO NOTHING;
+
+-- Tabela de produtos com estoque
+CREATE TABLE IF NOT EXISTS produtos (
+  id SERIAL PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  preco NUMERIC(10,2) NOT NULL,
+  estoque INTEGER NOT NULL DEFAULT 0
+);
