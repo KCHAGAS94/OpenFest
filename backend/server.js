@@ -2,8 +2,9 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import authRoutes from './src/routes/auth.js'
+import pagamentoRoutes from './src/routes/pagamento.js'
 
-dotenv.config()
+dotenv.config({ override: true })
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -13,6 +14,7 @@ app.use(express.json())
 
 // Rotas
 app.use('/api/auth', authRoutes)
+app.use('/api/pagamento', pagamentoRoutes)
 
 // Health check
 app.get('/api/health', (_req, res) => {
