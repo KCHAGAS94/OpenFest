@@ -9,7 +9,7 @@ export default function Relatorio() {
         <section className="rounded-3xl bg-gray-900/80 border border-white/10 p-8 shadow-xl shadow-black/20">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Financeiro</p>
+              <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Gestão</p>
               <h1 className="text-3xl font-semibold text-white">Financeiro</h1>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Acompanhe o desempenho por forma de pagamento e visualize os principais totais do evento.
@@ -123,7 +123,7 @@ export default function Relatorio() {
                   <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
                     Financeiro
                   </a>
-                  <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
+                  <a href="/produtos/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
                     Produtos
                   </a>
                 </div>

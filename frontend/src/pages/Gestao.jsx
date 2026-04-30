@@ -27,7 +27,7 @@ export default function Gestao() {
             </div>
           </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[1.4fr_0.9fr]">
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.7fr_0.7fr]">
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
@@ -68,7 +68,7 @@ export default function Gestao() {
               </div>
             </div>
 
-            <aside className="space-y-6">
+            <aside className="space-y-6 lg:sticky lg:top-10">
               <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
                 <h2 className="text-lg font-semibold text-white">Ações rápidas</h2>
                 <div className="mt-5 space-y-3">
@@ -78,7 +78,7 @@ export default function Gestao() {
                   <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
                     Financeiro
                   </a>
-                  <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
+                  <a href="/produtos/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
                     Produtos
                   </a>
                 </div>
