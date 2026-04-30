@@ -13,7 +13,7 @@ export default function Gestao() {
               <h1 className="text-3xl font-semibold text-white">Painel de gestão</h1>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Inicie a organização das principais áreas do OpenFest.
-                Aqui você vai gerenciar vendas, estoque, relatórios e configurações do evento.
+                Aqui você vai gerenciar vendas, estoque, financeiro e configurações do evento.
               </p>
             </div>
 
@@ -72,14 +72,14 @@ export default function Gestao() {
               <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
                 <h2 className="text-lg font-semibold text-white">Ações rápidas</h2>
                 <div className="mt-5 space-y-3">
-                  <a href="/produtos/novo" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
+                  <a href="/gestao" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
                     Dashboard
                   </a>
-                  <a href="/estoque" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Relatórios
+                  <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
+                    Financeiro
                   </a>
                   <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Abrir relatório diário
+                    Produtos
                   </a>
                 </div>
               </div>
