@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Teste Isolado Impressora</title>
+  <style>
+    /* Reseta todas as margens que os navegadores colocam por padrão */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    @media print {
+      @page {
+        /* Definimos uma altura FIXA de 80mm só para este teste. 
+           Se a impressora respeitar isso, ela vai parar de cuspir papel no final. */
+        size: 57.5mm 20mm;
+        margin: 0;
+      }
+      body {
+        width: 57.5mm;
+        font-family: monospace;
+        font-size: 12px;
+        color: black;
+        background: white;
+      }
+    }
+    
+    /* Estilos visuais básicos */
+    body { width: 57.5mm; padding: 5mm; font-family: monospace; font-size: 12px; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .row { display: flex; justify-content: space-between; margin: 4px 0; }
+    .linha { border-top: 1px dashed black; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="center bold">OPENFEST - TESTE</div>
+  <div class="center" style="font-size: 10px;">Teste de parada do papel</div>
+  
+  <div class="linha"></div>
+  <div class="row">
+    <span>1x Produto Teste</span>
+    <span>R$ 5,00</span>
+  </div>
+  <div class="linha"></div>
+  
+  <div class="row bold">
+    <span>TOTAL</span>
+    <span>R$ 5,00</span>
+  </div>
+</body>
+</html>

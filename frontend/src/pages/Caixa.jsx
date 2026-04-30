@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
+import ReciboImpressao from '../components/ReciboImpressao'
 
 function carregarProdutos() {
   try {
@@ -12,6 +13,8 @@ function carregarProdutos() {
 // Estados do pagamento: 'idle' | 'escolha' | 'aguardando_cartao' | 'aguardando_pix' | 'confirmado' | 'erro'
 
 export default function Caixa() {
+  const [mostrarRecibo, setMostrarRecibo] = useState(false);
+  const [reciboInfo, setReciboInfo] = useState({});
   const [produtos, setProdutos] = useState(carregarProdutos)
   const [carrinho, setCarrinho] = useState([])
   const [carrinhoAberto, setCarrinhoAberto] = useState(false)
@@ -32,54 +35,10 @@ export default function Caixa() {
 
   // Imprime e fecha ao confirmar
   useEffect(() => {
-    if (etapa === 'confirmado') {
-      imprimirRecibo()
-      const t = setTimeout(() => concluirVenda(), 1500)
-      return () => clearTimeout(t)
+    if (etapa === 'confirmado' && reciboInfo.itens) {
+      setMostrarRecibo(true);
     }
-  }, [etapa])
-
-  function imprimirRecibo() {
-    const agora = new Date().toLocaleString('pt-BR')
-
-    const itens = carrinho
-      .flatMap((i) =>
-        Array.from({ length: i.quantidade }, () =>
-          `<div class="ticket">
-            <div class="linha"></div>
-            <div class="titulo">OpenFest</div>
-            <div class="subtitulo">${agora}</div>
-            <div style="height:10px"></div>
-            <div class="nome">${i.nome}</div>
-            <div class="valor">R$ ${i.preco.toFixed(2)}</div>
-            <div class="linha"></div>
-          </div>`
-        )
-      )
-      .join('')
-
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: monospace; font-size: 14px; width: 80mm; padding: 8px; text-align: center; }
-        .ticket { margin-bottom: 0; }
-        .titulo { font-weight: bold; font-size: 15px; text-align: center; }
-        .subtitulo { font-size: 11px; color: #555; margin-bottom: 4px; text-align: center; }
-        .linha { border-top: 1px dashed #000; margin: 6px 0; }
-        .nome { font-weight: bold; font-size: 17.3px; margin-top: 8px; text-align: center; }
-        .valor { font-size: 17.3px; margin-top: 2px; text-align: center; }
-      </style>
-    </head><body>
-      ${itens}
-    </body></html>`
-
-    const win = window.open('', '_blank', 'width=400,height=600')
-    win.document.write(html)
-    win.document.close()
-    win.focus()
-    win.print()
-    win.close()
-  }
+  }, [etapa, reciboInfo]);
 
   const total = carrinho.reduce((acc, item) => acc + item.preco * item.quantidade, 0)
   const totalItens = carrinho.reduce((acc, item) => acc + item.quantidade, 0)
@@ -115,14 +74,26 @@ export default function Caixa() {
     setErroPag('')
   }
 
+  function confirmarPagamento() {
+    clearInterval(poolRef.current);
+    if (carrinho.length > 0) {
+      setReciboInfo({
+        evento: 'OpenFest',
+        itens: carrinho,
+        total: total,
+        data: new Date(),
+      });
+    }
+    setEtapa('confirmado');
+  }
+
   function iniciarPolling(id) {
     poolRef.current = setInterval(async () => {
       try {
         const res = await fetch(`/api/pagamento/status/${id}`)
         const data = await res.json()
         if (data.status === 'approved') {
-          clearInterval(poolRef.current)
-          setEtapa('confirmado')
+          confirmarPagamento()
         }
       } catch { /* ignora erros de rede temporários */ }
     }, 3000)
@@ -178,9 +149,11 @@ export default function Caixa() {
   }
 
   function concluirVenda() {
-    limparCarrinho()
-    setCarrinhoAberto(false)
-    fecharPagamento()
+    limparCarrinho();
+    setCarrinhoAberto(false);
+    fecharPagamento();
+    setMostrarRecibo(false);
+    setReciboInfo({});
   }
 
   const PainelCarrinho = (
@@ -225,14 +198,6 @@ export default function Caixa() {
         >
           Finalizar Venda
         </button>
-        {carrinho.length > 0 && (
-          <button
-            onClick={limparCarrinho}
-            className="w-full py-2 text-sm text-gray-500 hover:text-red-400 transition-colors"
-          >
-            Limpar pedido
-          </button>
-        )}
       </div>
     </div>
   )
@@ -304,29 +269,37 @@ export default function Caixa() {
                   </p>
                   <label className="block text-gray-400 text-sm mb-1">Valor recebido</label>
                   <input
-                    type="number"
+                    type="text"
                     min={total}
                     step="0.01"
                     placeholder={`R$ ${total.toFixed(2)}`}
                     value={valorPago}
-                    onChange={(e) => setValorPago(e.target.value)}
+                    onChange={(e) => {
+                      // Remove tudo que não for dígito
+                      const onlyNums = e.target.value.replace(/\D/g, "");
+                      // Converte para centavos
+                      let centavos = onlyNums ? parseInt(onlyNums, 10) : 0;
+                      // Formata para reais
+                      let formatted = (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      setValorPago(formatted);
+                    }}
                     className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-pink-500 mb-4"
                     autoFocus
                   />
-                  {valorPago && Number(valorPago) >= total && (
+                  {valorPago && Number(valorPago.replace(',', '.')) >= total && (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-center mb-4">
                       <p className="text-gray-400 text-xs mb-1">Troco</p>
                       <p className="text-green-400 font-bold text-2xl">
-                        R$ {(Number(valorPago) - total).toFixed(2)}
+                        R$ {(Number(valorPago.replace(',', '.')) - total).toFixed(2)}
                       </p>
                     </div>
                   )}
-                  {valorPago && Number(valorPago) < total && (
+                  {valorPago && Number(valorPago.replace(',', '.')) < total && (
                     <p className="text-red-400 text-sm text-center mb-4">Valor insuficiente</p>
                   )}
                   <button
-                    onClick={() => setEtapa('confirmado')}
-                    disabled={!valorPago || Number(valorPago) < total}
+                    onClick={confirmarPagamento}
+                    disabled={!valorPago || Number(valorPago.replace(',', '.')) < total}
                     className="w-full py-3 bg-pink-500 hover:bg-pink-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-white transition-colors"
                   >
                     Confirmar
@@ -377,7 +350,7 @@ export default function Caixa() {
                     Aguardando pagamento...
                   </div>
                   <button
-                    onClick={() => { clearInterval(poolRef.current); setEtapa('confirmado') }}
+                    onClick={confirmarPagamento}
                     className="mt-4 w-full py-2 bg-green-600 hover:bg-green-700 rounded-xl text-white text-sm font-medium transition-colors"
                   >
                     ✓ Já paguei
@@ -389,11 +362,14 @@ export default function Caixa() {
               )}
 
               {/* ── Confirmado ── */}
-              {etapa === 'confirmado' && (
-                <div className="text-center py-6">
-                  <p className="text-5xl mb-3">🖨️</p>
-                  <p className="text-white font-semibold">Imprimindo recibo...</p>
-                </div>
+              {etapa === 'confirmado' && mostrarRecibo && reciboInfo.itens && (
+                <ReciboImpressao
+                  evento={reciboInfo.evento}
+                  itens={reciboInfo.itens}
+                  total={reciboInfo.total}
+                  data={reciboInfo.data}
+                  onAfterPrint={concluirVenda}
+                />
               )}
 
             </div>
@@ -506,4 +482,3 @@ export default function Caixa() {
     </div>
   )
 }
-

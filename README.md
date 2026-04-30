@@ -18,25 +18,17 @@ OpenFest/
 
 ## Como rodar
 
-### 1. Banco de dados
+### 1. Configuração Inicial
 
 ```bash
+# Passo 1: Crie e popule o banco de dados
 psql -U postgres -f backend/src/db/init.sql
-```
 
-### 2. Backend
-
-```bash
-cd backend
+# Passo 2: Configure as variáveis de ambiente do backend
+# (navegue até a pasta 'backend' para fazer a cópia)
 cp .env.example .env   # edite com suas credenciais
-npm run dev            # porta 3000
-```
-
-### 3. Frontend
-
-```bash
-cd frontend
-npm run dev            # porta 5173
+# Passo 3: Instale todas as dependências do projeto
+npm run setup
 ```
 
 Acesse `http://localhost:5173` — a tela de login será exibida.
