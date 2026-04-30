@@ -3,13 +3,14 @@ import { useLocation } from 'react-router-dom'
 const links = [
   { href: '/caixa', label: 'Caixa' },
   { href: '/produtos', label: 'Produtos' },
+  { href: '/gestao', label: 'Gestão' },
 ]
 
 export default function Navbar() {
   const { pathname } = useLocation()
 
   return (
-    <header className="border-b border-white/10 bg-gray-900/60 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-white/10 bg-black sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="/dashboard" className="text-xl font-bold text-white">
           Open<span className="text-pink-400">Fest</span>
