@@ -72,26 +72,18 @@ export default function Gestao() {
               <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
                 <h2 className="text-lg font-semibold text-white">Ações rápidas</h2>
                 <div className="mt-5 space-y-3">
-                  <button className="w-full rounded-2xl bg-pink-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-pink-600">
-                    Adicionar novo produto
-                  </button>
-                  <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
-                    Gerenciar estoque
-                  </button>
-                  <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+                  <a href="/produtos/novo" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
+                    Dashboard
+                  </a>
+                  <a href="/estoque" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
+                    Relatórios
+                  </a>
+                  <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
                     Abrir relatório diário
-                  </button>
+                  </a>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
-                <h2 className="text-lg font-semibold text-white">Próximas etapas</h2>
-                <ul className="mt-5 space-y-3 text-sm text-gray-300">
-                  <li className="rounded-2xl bg-gray-900/70 p-4">Rever preços e promoções do dia.</li>
-                  <li className="rounded-2xl bg-gray-900/70 p-4">Verificar níveis de estoque mínimos.</li>
-                  <li className="rounded-2xl bg-gray-900/70 p-4">Conferir relatórios de vendas por horário.</li>
-                </ul>
-              </div>
             </aside>
           </div>
         </section>
