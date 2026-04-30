@@ -26,6 +26,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+
+// Middleware global para capturar erros não tratados e garantir resposta JSON
+app.use((err, req, res, next) => {
+  console.error('Erro não tratado:', err)
+  res.status(500).json({ message: 'Erro interno do servidor.', detalhe: err?.message || err })
+})
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`)
 })

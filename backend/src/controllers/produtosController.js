@@ -1,7 +1,7 @@
 // Controller para produtos com cadastro de estoque
-const pool = require('../db/pool');
+import pool from '../db/pool.js';
 
-exports.cadastrarProduto = async (req, res) => {
+export async function cadastrarProduto(req, res) {
   const { nome, preco, estoque } = req.body;
   try {
     const result = await pool.query(
@@ -12,13 +12,13 @@ exports.cadastrarProduto = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Erro ao cadastrar produto' });
   }
-};
+}
 
-exports.listarProdutos = async (req, res) => {
+export async function listarProdutos(req, res) {
   try {
     const result = await pool.query('SELECT * FROM produtos');
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao listar produtos' });
   }
-};
+}
