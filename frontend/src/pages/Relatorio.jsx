@@ -11,6 +11,11 @@ export default function Relatorio() {
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Gestão</p>
               <h1 className="text-3xl font-semibold text-white">Financeiro</h1>
+              <div className="mt-4 flex flex-wrap items-center gap-8 text-sm uppercase tracking-[0.3em] text-gray-300">
+                <a href="/gestao" className="hover:text-white/80">Dashboard</a>
+                <a href="/relatorio" className="text-white">Financeiro</a>
+                <a href="/produtos/relatorio" className="hover:text-white/80">Produtos</a>
+              </div>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Acompanhe o desempenho por forma de pagamento e visualize os principais totais do evento.
               </p>
@@ -112,23 +117,6 @@ export default function Relatorio() {
                 </div>
               </div>
             </div>
-
-            <aside className="space-y-6 lg:sticky lg:top-10">
-              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
-                <h2 className="text-lg font-semibold text-white">Ações rápidas</h2>
-                <div className="mt-5 space-y-3">
-                  <a href="/gestao" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Dashboard
-                  </a>
-                  <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Financeiro
-                  </a>
-                  <a href="/produtos/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Produtos
-                  </a>
-                </div>
-              </div>
-            </aside>
           </div>
         </section>
       </main>

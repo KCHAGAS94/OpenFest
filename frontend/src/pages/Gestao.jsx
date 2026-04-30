@@ -7,27 +7,23 @@ export default function Gestao() {
 
       <main className="max-w-7xl mx-auto px-6 py-10">
         <section className="rounded-3xl bg-gray-900/80 border border-white/10 p-8 shadow-xl shadow-black/20">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Gestão</p>
               <h1 className="text-3xl font-semibold text-white">Painel de gestão</h1>
+              <div className="mt-4 flex flex-wrap items-center gap-8 text-sm uppercase tracking-[0.3em] text-gray-300">
+                <a href="/gestao" className="text-white hover:text-white/80">Dashboard</a>
+                <a href="/relatorio" className="hover:text-white/80">Financeiro</a>
+                <a href="/produtos/relatorio" className="hover:text-white/80">Produtos</a>
+              </div>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Inicie a organização das principais áreas do OpenFest.
                 Aqui você vai gerenciar vendas, estoque, financeiro e configurações do evento.
               </p>
             </div>
-
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="/produtos"
-                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                Ir para produtos
-              </a>
-            </div>
           </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[1.7fr_0.7fr]">
+          <div className="mt-10 space-y-6">
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
@@ -67,24 +63,6 @@ export default function Gestao() {
                 </div>
               </div>
             </div>
-
-            <aside className="space-y-6 lg:sticky lg:top-10">
-              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
-                <h2 className="text-lg font-semibold text-white">Ações rápidas</h2>
-                <div className="mt-5 space-y-3">
-                  <a href="/gestao" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Dashboard
-                  </a>
-                  <a href="/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Financeiro
-                  </a>
-                  <a href="/produtos/relatorio" className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5">
-                    Produtos
-                  </a>
-                </div>
-              </div>
-
-            </aside>
           </div>
         </section>
       </main>
