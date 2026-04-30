@@ -9,45 +9,53 @@ function carregarProdutos() {
   }
 }
 
+function carregarVendas() {
+  try {
+    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
+  } catch {
+    return []
+  }
+}
+
 export default function ProdutosRelatorio() {
   const [filtroData, setFiltroData] = useState('')
   const [filtroProduto, setFiltroProduto] = useState('')
   const [filtroQuantidade, setFiltroQuantidade] = useState('')
   const [filtroValor, setFiltroValor] = useState('')
   const [filtroVendedor, setFiltroVendedor] = useState('')
+  
   const produtos = useMemo(() => carregarProdutos(), [])
+  const vendas = useMemo(() => carregarVendas(), [])
+  
+  // Estatísticas dos produtos
   const totalProdutos = produtos.length
   const valorTotalEstoque = produtos.reduce((sum, produto) => sum + produto.preco * produto.estoque, 0)
   const baixoEstoque = produtos.filter((produto) => produto.estoque > 0 && produto.estoque <= 3).length
   const semEstoque = produtos.filter((produto) => produto.estoque === 0).length
   const estoqueSaudavel = produtos.filter((produto) => produto.estoque > 3).length
 
-  const vendas = useMemo(
-    () => [
-      {
-        data: '30/04/2026 14:35',
-        produto: 'Cerveja',
-        quantidade: 3,
-        valor: 'R$ 45,00',
-        vendedor: 'João',
-      },
-      {
-        data: '30/04/2026 13:10',
-        produto: 'Hambúrguer',
-        quantidade: 2,
-        valor: 'R$ 36,00',
-        vendedor: 'Maria',
-      },
-      {
-        data: '30/04/2026 12:45',
-        produto: 'Refrigerante',
-        quantidade: 4,
-        valor: 'R$ 20,00',
-        vendedor: 'Carlos',
-      },
-    ],
-    []
-  )
+  // Estatísticas das vendas
+  const totalVendas = vendas.length
+  const valorTotalVendas = vendas.reduce((sum, venda) => sum + venda.total, 0)
+  const vendasPorProduto = vendas.reduce((acc, venda) => {
+    venda.itens.forEach(item => {
+      acc[item.nome] = (acc[item.nome] || 0) + item.quantidade
+    })
+    return acc
+  }, {})
+
+  // Transformar vendas em formato plano para a tabela
+  const vendasPlanas = useMemo(() => {
+    return vendas.flatMap(venda => 
+      venda.itens.map(item => ({
+        data: new Date(venda.data).toLocaleString('pt-BR'),
+        produto: item.nome,
+        quantidade: item.quantidade,
+        valor: `R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')}`,
+        vendedor: venda.vendedor || 'Sistema',
+      }))
+    )
+  }, [vendas])
 
   const vendasFiltradas = useMemo(() => {
     const termoData = filtroData.trim().toLowerCase()
@@ -56,7 +64,7 @@ export default function ProdutosRelatorio() {
     const termoValor = filtroValor.trim().toLowerCase()
     const termoVendedor = filtroVendedor.trim().toLowerCase()
 
-    return vendas.filter((item) => {
+    return vendasPlanas.filter((item) => {
       const dataMatch = termoData ? item.data.toLowerCase().includes(termoData) : true
       const produtoMatch = termoProduto ? item.produto.toLowerCase().includes(termoProduto) : true
       const quantidadeMatch = termoQuantidade ? item.quantidade.toString().includes(termoQuantidade) : true
@@ -64,7 +72,7 @@ export default function ProdutosRelatorio() {
       const vendedorMatch = termoVendedor ? item.vendedor.toLowerCase().includes(termoVendedor) : true
       return dataMatch && produtoMatch && quantidadeMatch && valorMatch && vendedorMatch
     })
-  }, [filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendas])
+  }, [filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendasPlanas])
 
   const barraStats = [
     {

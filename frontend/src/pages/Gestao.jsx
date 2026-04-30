@@ -1,6 +1,37 @@
+import { useMemo } from 'react'
 import Navbar from '../components/Navbar'
 
+function carregarProdutos() {
+  try {
+    return JSON.parse(localStorage.getItem('openfest_produtos')) || []
+  } catch {
+    return []
+  }
+}
+
+function carregarVendas() {
+  try {
+    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
+  } catch {
+    return []
+  }
+}
+
 export default function Gestao() {
+  const produtos = useMemo(() => carregarProdutos(), [])
+  const vendas = useMemo(() => carregarVendas(), [])
+  
+  // Calcular estatísticas
+  const vendasDoDia = vendas.filter(venda => {
+    const hoje = new Date()
+    const dataVenda = new Date(venda.data)
+    return dataVenda.toDateString() === hoje.toDateString()
+  }).reduce((sum, venda) => sum + venda.total, 0)
+  
+  const totalProdutos = produtos.length
+  const pedidosEmAberto = vendas.filter(venda => !venda.confirmada).length // Simulando pedidos em aberto
+  const valorTotalEstoque = produtos.reduce((sum, produto) => sum + produto.preco * produto.estoque, 0)
+  const errosEstoque = produtos.filter(produto => produto.estoque < 0).length
   return (
     <>
       <Navbar />
@@ -28,17 +59,17 @@ export default function Gestao() {
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
                   <p className="text-sm text-gray-400">Vendas do dia</p>
-                  <p className="mt-4 text-3xl font-semibold text-white">R$ 3.450,00</p>
+                  <p className="mt-4 text-3xl font-semibold text-white">R$ {vendasDoDia.toFixed(2).replace('.', ',')}</p>
                   <p className="mt-2 text-sm text-gray-500">Atualizado em tempo real</p>
                 </div>
                 <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
                   <p className="text-sm text-gray-400">Produtos cadastrados</p>
-                  <p className="mt-4 text-3xl font-semibold text-white">42 itens</p>
+                  <p className="mt-4 text-3xl font-semibold text-white">{totalProdutos} itens</p>
                   <p className="mt-2 text-sm text-gray-500">Inclui comidas, bebidas e brindes</p>
                 </div>
                 <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
                   <p className="text-sm text-gray-400">Pedidos em aberto</p>
-                  <p className="mt-4 text-3xl font-semibold text-white">8</p>
+                  <p className="mt-4 text-3xl font-semibold text-white">{pedidosEmAberto}</p>
                   <p className="mt-2 text-sm text-gray-500">Acompanhamento de atendimento</p>
                 </div>
               </div>
@@ -54,11 +85,11 @@ export default function Gestao() {
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl bg-gray-900 p-4">
                     <p className="text-sm text-gray-400">Saldo disponível</p>
-                    <p className="mt-2 text-xl font-semibold text-white">R$ 14.780,00</p>
+                    <p className="mt-2 text-xl font-semibold text-white">R$ {valorTotalEstoque.toFixed(2).replace('.', ',')}</p>
                   </div>
                   <div className="rounded-2xl bg-gray-900 p-4">
                     <p className="text-sm text-gray-400">Erros de estoque</p>
-                    <p className="mt-2 text-xl font-semibold text-white">2 itens</p>
+                    <p className="mt-2 text-xl font-semibold text-white">{errosEstoque} itens</p>
                   </div>
                 </div>
               </div>

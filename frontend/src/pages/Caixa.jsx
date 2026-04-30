@@ -10,6 +10,22 @@ function carregarProdutos() {
   }
 }
 
+function salvarVendas(vendas) {
+  try {
+    localStorage.setItem('openfest_vendas', JSON.stringify(vendas))
+  } catch (error) {
+    console.error('Erro ao salvar vendas:', error)
+  }
+}
+
+function carregarVendas() {
+  try {
+    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
+  } catch {
+    return []
+  }
+}
+
 // Estados do pagamento: 'idle' | 'escolha' | 'aguardando_cartao' | 'aguardando_pix' | 'confirmado' | 'erro'
 
 export default function Caixa() {
@@ -77,6 +93,18 @@ export default function Caixa() {
   function confirmarPagamento() {
     clearInterval(poolRef.current);
     if (carrinho.length > 0) {
+      // Salvar venda
+      const venda = {
+        id: Date.now(),
+        data: new Date(),
+        itens: carrinho,
+        total: total,
+        vendedor: 'Sistema', // Pode ser expandido para ter usuário logado
+      }
+      
+      const vendasAtuais = carregarVendas()
+      salvarVendas([...vendasAtuais, venda])
+
       setReciboInfo({
         evento: 'OpenFest',
         itens: carrinho,
