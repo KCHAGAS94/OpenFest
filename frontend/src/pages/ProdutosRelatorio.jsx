@@ -30,19 +30,20 @@ export default function ProdutosRelatorio() {
   // Estatísticas dos produtos
   const totalProdutos = produtos.length
   const valorTotalEstoque = produtos.reduce((sum, produto) => sum + produto.preco * produto.estoque, 0)
-  const baixoEstoque = produtos.filter((produto) => produto.estoque > 0 && produto.estoque <= 3).length
-  const semEstoque = produtos.filter((produto) => produto.estoque === 0).length
-  const estoqueSaudavel = produtos.filter((produto) => produto.estoque > 3).length
 
   // Estatísticas das vendas
   const totalVendas = vendas.length
   const valorTotalVendas = vendas.reduce((sum, venda) => sum + venda.total, 0)
+  // Soma quantidade vendida por produto
   const vendasPorProduto = vendas.reduce((acc, venda) => {
     venda.itens.forEach(item => {
       acc[item.nome] = (acc[item.nome] || 0) + item.quantidade
     })
     return acc
   }, {})
+  // Array para gráfico
+  const produtosVendidos = Object.entries(vendasPorProduto).map(([nome, quantidade]) => ({ nome, quantidade }));
+  const maxQuantidade = Math.max(1, ...produtosVendidos.map(p => p.quantidade));
 
   // Transformar vendas em formato plano para a tabela
   const vendasPlanas = useMemo(() => {
@@ -74,25 +75,7 @@ export default function ProdutosRelatorio() {
     })
   }, [filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendasPlanas])
 
-  const barraStats = [
-    {
-      label: 'Estoque saudável',
-      value: estoqueSaudavel,
-      color: 'bg-blue-500',
-    },
-    {
-      label: 'Baixo estoque',
-      value: baixoEstoque,
-      color: 'bg-purple-500',
-    },
-    {
-      label: 'Sem estoque',
-      value: semEstoque,
-      color: 'bg-amber-500',
-    },
-  ]
 
-  const maxValue = Math.max(1, ...barraStats.map((item) => item.value))
 
   return (
     <>
@@ -138,20 +121,22 @@ export default function ProdutosRelatorio() {
                 <div className="mt-6 rounded-3xl bg-gray-900 p-6">
                   <div className="space-y-5">
                     <div>
-                      <p className="text-sm text-gray-400">Gráfico de status de estoque</p>
+                      <p className="text-sm text-gray-400">Gráfico de produtos vendidos</p>
                     </div>
-
                     <div className="space-y-5">
-                      {barraStats.map((stat) => (
-                        <div key={stat.label}>
+                      {produtosVendidos.length === 0 && (
+                        <div className="text-gray-500 text-sm">Nenhum produto vendido ainda.</div>
+                      )}
+                      {produtosVendidos.map((produto) => (
+                        <div key={produto.nome}>
                           <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
-                            <span>{stat.label}</span>
-                            <span>{stat.value}</span>
+                            <span>{produto.nome}</span>
+                            <span>{produto.quantidade}</span>
                           </div>
                           <div className="h-10 rounded-full bg-white/5">
                             <div
-                              className={`h-full rounded-full ${stat.color}`}
-                              style={{ width: `${(stat.value / maxValue) * 100}%` }}
+                              className="h-full rounded-full bg-blue-500"
+                              style={{ width: `${(produto.quantidade / maxQuantidade) * 100}%` }}
                             />
                           </div>
                         </div>
