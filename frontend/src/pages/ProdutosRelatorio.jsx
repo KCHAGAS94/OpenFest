@@ -65,14 +65,26 @@ export default function ProdutosRelatorio() {
     const termoValor = filtroValor.trim().toLowerCase()
     const termoVendedor = filtroVendedor.trim().toLowerCase()
 
-    return vendasPlanas.filter((item) => {
-      const dataMatch = termoData ? item.data.toLowerCase().includes(termoData) : true
-      const produtoMatch = termoProduto ? item.produto.toLowerCase().includes(termoProduto) : true
-      const quantidadeMatch = termoQuantidade ? item.quantidade.toString().includes(termoQuantidade) : true
-      const valorMatch = termoValor ? item.valor.toLowerCase().includes(termoValor) : true
-      const vendedorMatch = termoVendedor ? item.vendedor.toLowerCase().includes(termoVendedor) : true
-      return dataMatch && produtoMatch && quantidadeMatch && valorMatch && vendedorMatch
-    })
+    // Ordena por data (mais recente primeiro)
+    return vendasPlanas
+      .filter((item) => {
+        const dataMatch = termoData ? item.data.toLowerCase().includes(termoData) : true
+        const produtoMatch = termoProduto ? item.produto.toLowerCase().includes(termoProduto) : true
+        const quantidadeMatch = termoQuantidade ? item.quantidade.toString().includes(termoQuantidade) : true
+        const valorMatch = termoValor ? item.valor.toLowerCase().includes(termoValor) : true
+        const vendedorMatch = termoVendedor ? item.vendedor.toLowerCase().includes(termoVendedor) : true
+        return dataMatch && produtoMatch && quantidadeMatch && valorMatch && vendedorMatch
+      })
+      .sort((a, b) => {
+        // Precisa converter a string de data para Date para comparar corretamente
+        const [dA, tA] = a.data.split(', ');
+        const [dB, tB] = b.data.split(', ');
+        const [diaA, mesA, anoA] = dA.split('/');
+        const [diaB, mesB, anoB] = dB.split('/');
+        const dateA = new Date(`${anoA}-${mesA}-${diaA}T${tA}`);
+        const dateB = new Date(`${anoB}-${mesB}-${diaB}T${tB}`);
+        return dateB - dateA;
+      });
   }, [filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendasPlanas])
 
 
