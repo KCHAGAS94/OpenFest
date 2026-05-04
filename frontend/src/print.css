@@ -1,4 +1,8 @@
 @media print {
+  @page {
+    size: portrait;
+    margin: 0;
+  }
   body {
     margin: 0;
     padding: 0;
@@ -7,6 +11,6 @@
     width: 58mm !important;
     max-width: 58mm !important;
     font-size: 12px;
-    margin: 0 auto;
+    margin: 0;
   }
 }
