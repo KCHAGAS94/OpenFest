@@ -18,13 +18,19 @@ export default function Relatorio() {
     let totalGeral = 0
     
     vendas.forEach(venda => {
-      // Por enquanto, vamos simular tipos de pagamento aleatórios
-      // Em produção, isso viria da venda real
-      const tipos = ['Dinheiro', 'Pix', 'Debito', 'Credito']
-      const tipoAleatorio = tipos[Math.floor(Math.random() * tipos.length)]
-      pagamentos[tipoAleatorio] += venda.total
-      totalGeral += venda.total
-    })
+      // Usa o tipoPagamento salvo na venda
+      let tipo = venda.tipoPagamento || 'Dinheiro';
+      // Corrige possíveis variações de nome
+      if (tipo.toLowerCase() === 'debito') tipo = 'Debito';
+      if (tipo.toLowerCase() === 'débito') tipo = 'Debito';
+      if (tipo.toLowerCase() === 'credito') tipo = 'Credito';
+      if (tipo.toLowerCase() === 'crédito') tipo = 'Credito';
+      if (tipo.toLowerCase() === 'pix') tipo = 'Pix';
+      if (tipo.toLowerCase() === 'dinheiro') tipo = 'Dinheiro';
+      if (!pagamentos[tipo]) tipo = 'Dinheiro';
+      pagamentos[tipo] += venda.total;
+      totalGeral += venda.total;
+    });
     
     // Calcular porcentagens
     const porcentagens = {
@@ -56,15 +62,7 @@ export default function Relatorio() {
               </p>
             </div>
 
-            <div className="w-full max-w-xs">
-              <label htmlFor="filtro" className="sr-only">Filtro</label>
-              <input
-                id="filtro"
-                type="text"
-                placeholder="FILTRO"
-                className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white outline-none transition focus:border-pink-400 focus:ring-2 focus:ring-pink-400/20"
-              />
-            </div>
+            {/* Filtro removido */}
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.7fr_0.65fr]">

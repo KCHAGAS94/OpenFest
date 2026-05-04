@@ -90,21 +90,24 @@ export default function Caixa() {
     setErroPag('')
   }
 
-  function confirmarPagamento() {
-    clearInterval(poolRef.current);
+  // Salva o tipo de pagamento na venda
+  function confirmarPagamento(tipoPagamento = 'Dinheiro') {
+    if (poolRef.current && poolRef.current.interval) {
+      clearInterval(poolRef.current.interval);
+    } else {
+      clearInterval(poolRef.current);
+    }
     if (carrinho.length > 0) {
-      // Salvar venda
       const venda = {
         id: Date.now(),
         data: new Date(),
         itens: carrinho,
         total: total,
-        vendedor: 'Sistema', // Pode ser expandido para ter usuário logado
-      }
-      
-      const vendasAtuais = carregarVendas()
-      salvarVendas([...vendasAtuais, venda])
-
+        vendedor: 'Sistema',
+        tipoPagamento,
+      };
+      const vendasAtuais = carregarVendas();
+      salvarVendas([...vendasAtuais, venda]);
       setReciboInfo({
         evento: 'OpenFest',
         itens: carrinho,
@@ -115,28 +118,32 @@ export default function Caixa() {
     setEtapa('confirmado');
   }
 
-  function iniciarPolling(id) {
-    poolRef.current = setInterval(async () => {
+  function iniciarPolling(id, tipoPagamento = 'Dinheiro') {
+    if (!poolRef.current) poolRef.current = {};
+    poolRef.current.tipoPagamento = tipoPagamento;
+    poolRef.current.interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/pagamento/status/${id}`)
-        const data = await res.json()
+        const res = await fetch(`/api/pagamento/status/${id}`);
+        const data = await res.json();
         if (data.status === 'approved') {
-          confirmarPagamento()
+          clearInterval(poolRef.current.interval);
+          confirmarPagamento(tipoPagamento);
         }
-      } catch { /* ignora erros de rede temporários */ }
-    }, 3000)
+      } catch {}
+    }, 3000);
   }
 
   async function selecionarPagamento(tipo) {
-    setLoadingPag(true)
-    setErroPag('')
+    setLoadingPag(true);
+    setErroPag('');
 
     try {
       if (tipo === 'Dinheiro') {
-        setValorPago('')
-        setEtapa('dinheiro')
-        setLoadingPag(false)
-        return
+        setValorPago('');
+        setEtapa('dinheiro');
+        setLoadingPag(false);
+        // O pagamento em dinheiro será confirmado ao clicar em "Confirmar" no modal
+        return;
       }
 
       if (tipo === 'Pix') {
@@ -144,13 +151,14 @@ export default function Caixa() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ valor: total, descricao: 'Venda OpenFest' }),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message)
-        setPixData(data)
-        setEtapa('aguardando_pix')
-        iniciarPolling(data.id)
-        return
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        setPixData(data);
+        setEtapa('aguardando_pix');
+        poolRef.current = { tipoPagamento: 'Pix', interval: null, id: data.id };
+        iniciarPolling(data.id, 'Pix');
+        return;
       }
 
       // Débito ou Crédito — Point Tap
@@ -162,17 +170,18 @@ export default function Caixa() {
           descricao: 'Venda OpenFest',
           tipo: tipo === 'Crédito' ? 'credito' : 'debito',
         }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message)
-      setEtapa('aguardando_cartao')
-      iniciarPolling(data.id)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setEtapa('aguardando_cartao');
+      poolRef.current = { tipoPagamento: tipo, interval: null, id: data.id };
+      iniciarPolling(data.id, tipo);
 
     } catch (err) {
-      setErroPag(err.message || 'Erro ao processar pagamento.')
-      setEtapa('escolha')
+      setErroPag(err.message || 'Erro ao processar pagamento.');
+      setEtapa('escolha');
     } finally {
-      setLoadingPag(false)
+      setLoadingPag(false);
     }
   }
 
@@ -326,7 +335,7 @@ export default function Caixa() {
                     <p className="text-red-400 text-sm text-center mb-4">Valor insuficiente</p>
                   )}
                   <button
-                    onClick={confirmarPagamento}
+                    onClick={() => confirmarPagamento('Dinheiro')}
                     disabled={!valorPago || Number(valorPago.replace(',', '.')) < total}
                     className="w-full py-3 bg-pink-500 hover:bg-pink-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-white transition-colors"
                   >

@@ -18,6 +18,7 @@ function carregarVendas() {
 }
 
 export default function ProdutosRelatorio() {
+  const [filtroPedido, setFiltroPedido] = useState('')
   const [filtroData, setFiltroData] = useState('')
   const [filtroProduto, setFiltroProduto] = useState('')
   const [filtroQuantidade, setFiltroQuantidade] = useState('')
@@ -46,19 +47,25 @@ export default function ProdutosRelatorio() {
   const maxQuantidade = Math.max(1, ...produtosVendidos.map(p => p.quantidade));
 
   // Transformar vendas em formato plano para a tabela
+  // Adiciona idPedido sequencial formatado
   const vendasPlanas = useMemo(() => {
-    return vendas.flatMap(venda => 
-      venda.itens.map(item => ({
+    let seq = 1;
+    return vendas.flatMap(venda => {
+      const idPedido = String(seq).padStart(5, '0');
+      seq++;
+      return venda.itens.map(item => ({
+        idPedido,
         data: new Date(venda.data).toLocaleString('pt-BR'),
         produto: item.nome,
         quantidade: item.quantidade,
         valor: `R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')}`,
         vendedor: venda.vendedor || 'Sistema',
-      }))
-    )
-  }, [vendas])
+      }));
+    });
+  }, [vendas]);
 
   const vendasFiltradas = useMemo(() => {
+    const termoPedido = filtroPedido.trim()
     const termoData = filtroData.trim().toLowerCase()
     const termoProduto = filtroProduto.trim().toLowerCase()
     const termoQuantidade = filtroQuantidade.trim().toLowerCase()
@@ -68,12 +75,13 @@ export default function ProdutosRelatorio() {
     // Ordena por data (mais recente primeiro)
     return vendasPlanas
       .filter((item) => {
+        const pedidoMatch = termoPedido ? item.idPedido.includes(termoPedido) : true
         const dataMatch = termoData ? item.data.toLowerCase().includes(termoData) : true
         const produtoMatch = termoProduto ? item.produto.toLowerCase().includes(termoProduto) : true
         const quantidadeMatch = termoQuantidade ? item.quantidade.toString().includes(termoQuantidade) : true
         const valorMatch = termoValor ? item.valor.toLowerCase().includes(termoValor) : true
         const vendedorMatch = termoVendedor ? item.vendedor.toLowerCase().includes(termoVendedor) : true
-        return dataMatch && produtoMatch && quantidadeMatch && valorMatch && vendedorMatch
+        return pedidoMatch && dataMatch && produtoMatch && quantidadeMatch && valorMatch && vendedorMatch
       })
       .sort((a, b) => {
         // Precisa converter a string de data para Date para comparar corretamente
@@ -85,7 +93,7 @@ export default function ProdutosRelatorio() {
         const dateB = new Date(`${anoB}-${mesB}-${diaB}T${tB}`);
         return dateB - dateA;
       });
-  }, [filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendasPlanas])
+  }, [filtroPedido, filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendasPlanas])
 
 
 
@@ -109,15 +117,7 @@ export default function ProdutosRelatorio() {
               </p>
             </div>
 
-            <div className="w-full max-w-xs">
-              <label htmlFor="pesquisa-produtos" className="sr-only">Pesquisar produtos</label>
-              <input
-                id="pesquisa-produtos"
-                type="text"
-                placeholder="Pesquisar"
-                className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white outline-none transition focus:border-pink-400 focus:ring-2 focus:ring-pink-400/20"
-              />
-            </div>
+            {/* Campo de pesquisa removido */}
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.7fr_0.65fr]">
@@ -139,20 +139,22 @@ export default function ProdutosRelatorio() {
                       {produtosVendidos.length === 0 && (
                         <div className="text-gray-500 text-sm">Nenhum produto vendido ainda.</div>
                       )}
-                      {produtosVendidos.map((produto) => (
-                        <div key={produto.nome}>
-                          <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
-                            <span>{produto.nome}</span>
-                            <span>{produto.quantidade}</span>
+                      {[...produtosVendidos]
+                        .sort((a, b) => b.quantidade - a.quantidade)
+                        .map((produto) => (
+                          <div key={produto.nome}>
+                            <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
+                              <span>{produto.nome}</span>
+                              <span>{produto.quantidade}</span>
+                            </div>
+                            <div className="h-10 rounded-full bg-white/5">
+                              <div
+                                className="h-full rounded-full bg-blue-500"
+                                style={{ width: `${(produto.quantidade / maxQuantidade) * 100}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="h-10 rounded-full bg-white/5">
-                            <div
-                              className="h-full rounded-full bg-blue-500"
-                              style={{ width: `${(produto.quantidade / maxQuantidade) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -162,10 +164,11 @@ export default function ProdutosRelatorio() {
                 <h2 className="text-lg font-semibold text-white">Relatório de vendas</h2>
                 <p className="mt-2 text-sm text-gray-400">Aqui estão as últimas vendas registradas com hora, produto e vendedor.</p>
 
-                <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-gray-900">
-                  <table className="min-w-full border-collapse border border-white/10 text-left text-sm text-gray-200">
+                <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-gray-900" style={{ width: '100%' }}>
+                  <table className="w-full border-collapse border border-white/10 text-left text-sm text-gray-200" style={{ minWidth: '1200px' }}>
                     <thead className="bg-gray-950/70">
                       <tr>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Pedido</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Data</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Produto</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Quantidade</th>
@@ -173,6 +176,14 @@ export default function ProdutosRelatorio() {
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Vendedor</th>
                       </tr>
                       <tr className="bg-gray-900/80">
+                        <th className="border border-white/10 px-4 py-2">
+                          <input
+                            value={filtroPedido}
+                            onChange={(event) => setFiltroPedido(event.target.value)}
+                            placeholder="Filtrar pedido"
+                            className="w-full rounded-none border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-pink-400 focus:ring-2 focus:ring-pink-400/20"
+                          />
+                        </th>
                         <th className="border border-white/10 px-4 py-2">
                           <input
                             value={filtroData}
@@ -225,11 +236,12 @@ export default function ProdutosRelatorio() {
                       ) : (
                         vendasFiltradas.map((venda, index) => (
                           <tr key={`${venda.data}-${index}`}>
-                            <td className="border border-white/10 px-4 py-3">{venda.data}</td>
-                            <td className="border border-white/10 px-4 py-3">{venda.produto}</td>
-                            <td className="border border-white/10 px-4 py-3">{venda.quantidade}</td>
-                            <td className="border border-white/10 px-4 py-3">{venda.valor}</td>
-                            <td className="border border-white/10 px-4 py-3">{venda.vendedor}</td>
+                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.idPedido}</td>
+                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.data}</td>
+                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.produto}</td>
+                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.quantidade}</td>
+                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.valor}</td>
+                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.vendedor}</td>
                           </tr>
                         ))
                       )}
