@@ -74,6 +74,11 @@ export default function Funcionarios() {
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
   }, [funcionarios, filtroNome, filtroFuncao, filtroSalario, filtroTipoAcesso, filtroStatusPagamento])
 
+    // Cálculo dos custos totais
+    const custoTotal = funcionarios.reduce((acc, f) => acc + (parseFloat(f.salario) || 0), 0)
+    const custoPago = funcionarios.filter(f => f.statusPagamento === 'pago').reduce((acc, f) => acc + (parseFloat(f.salario) || 0), 0)
+    const custoAPagar = funcionarios.filter(f => f.statusPagamento !== 'pago').reduce((acc, f) => acc + (parseFloat(f.salario) || 0), 0)
+
   // Salvar funcionários quando mudar
   useEffect(() => {
     salvarFuncionarios(funcionarios)
@@ -207,15 +212,75 @@ export default function Funcionarios() {
         </section>
       </main>
 
-      <div className="funcionarios-container">
-        <div className="funcionarios-header">
-          <button 
-            className="btn-adicionar"
-            onClick={() => setModalAberto(true)}
-          >
-            + Adicionar Funcionário
-          </button>
-        </div>
+      <div className="funcionarios-container" style={{ background: '#0c1018', paddingTop: 0, paddingBottom: 0, minHeight: '100vh' }}>
+
+          {/* Custos totais */}
+
+          <div className="custos-totais-funcionarios" style={{ display: 'flex', gap: 20, marginBottom: 32, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{
+              background: '#0c1018',
+              borderRadius: 18,
+              border: '1.5px solid #232733',
+              padding: '16px 20px',
+              minWidth: 180,
+              color: '#fff',
+              boxShadow: '0 2px 16px 0 #0002',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 10
+            }}>
+              <span style={{ fontSize: 14, color: '#bfc6d5', marginBottom: 4, textAlign: 'center' }}>Custo total de funcionários</span>
+              <span style={{ fontSize: 22, fontWeight: 600, color: '#fff', letterSpacing: '-1px', textAlign: 'center' }}>R$ {custoTotal.toFixed(2)}</span>
+              <span style={{ fontSize: 12, color: '#7e8ca0', marginTop: 4, textAlign: 'center' }}>Soma de todos os salários</span>
+            </div>
+            <div style={{
+              background: '#0c1018',
+              borderRadius: 18,
+              border: '1.5px solid #232733',
+              padding: '16px 20px',
+              minWidth: 180,
+              color: '#fff',
+              boxShadow: '0 2px 16px 0 #0002',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 10
+            }}>
+              <span style={{ fontSize: 14, color: '#bfc6d5', marginBottom: 4, textAlign: 'center' }}>Custo total pago</span>
+              <span style={{ fontSize: 22, fontWeight: 600, color: '#22c55e', letterSpacing: '-1px', textAlign: 'center' }}>R$ {custoPago.toFixed(2)}</span>
+              <span style={{ fontSize: 12, color: '#7e8ca0', marginTop: 4, textAlign: 'center' }}>Funcionários já pagos</span>
+            </div>
+            <div style={{
+              background: '#0c1018',
+              borderRadius: 18,
+              border: '1.5px solid #232733',
+              padding: '16px 20px',
+              minWidth: 180,
+              color: '#fff',
+              boxShadow: '0 2px 16px 0 #0002',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 10
+            }}>
+              <span style={{ fontSize: 14, color: '#bfc6d5', marginBottom: 4, textAlign: 'center' }}>Custo total à pagar</span>
+              <span style={{ fontSize: 22, fontWeight: 600, color: '#facc15', letterSpacing: '-1px', textAlign: 'center' }}>R$ {custoAPagar.toFixed(2)}</span>
+              <span style={{ fontSize: 12, color: '#7e8ca0', marginTop: 4, textAlign: 'center' }}>Funcionários pendentes</span>
+            </div>
+          </div>
+
+          <div className="funcionarios-header">
+            <button 
+              className="btn-adicionar"
+              onClick={() => setModalAberto(true)}
+            >
+              + Adicionar Funcionário
+            </button>
+          </div>
 
         <div className="funcionarios-content">
           {funcionarios.length === 0 ? (
