@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import ReciboImpressao from '../components/ReciboImpressao'
+import '../print.css';
 
 function carregarProdutos() {
   try {

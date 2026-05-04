@@ -23,7 +23,7 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
   const pageHeight = baseHeight + (itens?.length || 1) * 3;
 
   const printContent = (
-    <div className="print-container text-black bg-white">
+    <div className="recibo-print print-container text-black bg-white">
       <style>
         {`
           @media print {
