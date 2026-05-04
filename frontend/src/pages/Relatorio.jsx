@@ -56,6 +56,7 @@ export default function Relatorio() {
                 <a href="/gestao" className="hover:text-white/80">Dashboard</a>
                 <a href="/relatorio" className="text-white">Financeiro</a>
                 <a href="/produtos/relatorio" className="hover:text-white/80">Produtos</a>
+                <a href="/funcionarios" className="hover:text-white/80">Funcionários</a>
               </div>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Acompanhe o desempenho por forma de pagamento e visualize os principais totais do evento.

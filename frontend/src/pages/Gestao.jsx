@@ -106,6 +106,7 @@ export default function Gestao() {
                 <a href="/gestao" className="text-white hover:text-white/80">Dashboard</a>
                 <a href="/relatorio" className="hover:text-white/80">Financeiro</a>
                 <a href="/produtos/relatorio" className="hover:text-white/80">Produtos</a>
+                <a href="/funcionarios" className="hover:text-white/80">Funcionários</a>
               </div>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Inicie a organização das principais áreas do OpenFest.

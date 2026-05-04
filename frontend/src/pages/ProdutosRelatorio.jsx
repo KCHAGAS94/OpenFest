@@ -111,6 +111,7 @@ export default function ProdutosRelatorio() {
                 <a href="/gestao" className="hover:text-white/80">Dashboard</a>
                 <a href="/relatorio" className="hover:text-white/80">Financeiro</a>
                 <a href="/produtos/relatorio" className="text-white">Produtos</a>
+                <a href="/funcionarios" className="hover:text-white/80">Funcionários</a>
               </div>
               <p className="mt-3 max-w-2xl text-gray-300 leading-7">
                 Acompanhe o estoque, o valor total dos produtos e os principais indicadores da área de produtos.
