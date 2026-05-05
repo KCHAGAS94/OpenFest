@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 
 export default function ReciboImpressao({ evento, itens, total, data, onAfterPrint }) {
   useEffect(() => {
-    // Pequeno delay para garantir que o DOM foi renderizado antes de imprimir
     const timer = setTimeout(() => {
       window.print();
     }, 500);
@@ -13,7 +12,6 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
     };
 
     window.addEventListener('afterprint', handleAfterPrint);
-
     return () => {
       clearTimeout(timer);
       window.removeEventListener('afterprint', handleAfterPrint);
@@ -26,62 +24,93 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
         {`
           @media print {
             @page {
-              size: 58mm auto; /* Define largura fixa e altura automática */
-              margin: 0;
+              size: 58mm auto;
+              margin: 0 !important;
             }
+            
             body {
-              margin: 0;
-              padding: 0;
-              background-color: white;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+              color: #000000 !important;
+              width: 58mm;
             }
+
             #root {
               display: none !important;
             }
+
             .print-container {
               display: block !important;
               width: 58mm;
-              padding: 2mm;
-              font-family: 'Courier New', Courier, monospace;
+              /* Ajuste fino do deslocamento para a esquerda */
+              margin-left: -5mm !important; 
+              padding: 0 !important;
             }
+
             .item-recibo {
-              page-break-inside: avoid; /* Evita que um item seja cortado no meio */
-              border-bottom: 1px dashed #000; /* Linha opcional para separar visualmente na hora de cortar */
-              padding-bottom: 10mm;
-              padding-top: 5mm;
+              page-break-inside: avoid;
               text-align: center;
+              padding: 4mm 0mm 8mm 0mm; 
+              border-bottom: 0.5pt dashed #000;
+              /* Aumentamos a largura para garantir que o texto centralizado não suma */
+              width: 60mm; 
+              box-sizing: border-box;
             }
-            .item-recibo:last-child {
-              border-bottom: none;
+
+            .bold-extreme {
+              font-weight: 900 !important;
+              color: #000000 !important;
+              display: block;
+              width: 100%;
+            }
+
+            /* Garante visibilidade total dos textos menores */
+            .texto-detalhe {
+              display: block !important;
+              width: 100% !important;
+              color: #000000 !important;
+              font-weight: bold !important;
             }
           }
+
           @media screen {
-            .print-container {
-              display: none;
-            }
+            .print-container { display: none; }
           }
         `}
       </style>
 
-      {/* Mapeamento dos itens: gera um bloco completo para cada unidade vendida */}
       {itens?.map((item, idx) => 
         Array.from({ length: item.quantidade }).map((_, unidadeIdx) => (
           <div key={`${item.id}-${idx}-${unidadeIdx}`} className="item-recibo">
-            <h1 style={{ fontSize: '14px', margin: '0', fontWeight: 'bold', textTransform: 'uppercase' }}>
+            {/* 1. Nome do Evento */}
+            <span className="bold-extreme" style={{ fontSize: '14px', textTransform: 'uppercase' }}>
               {evento}
-            </h1>
-            <p style={{ fontSize: '10px', margin: '2px 0' }}>Recibo de Pagamento</p>
+            </span>
+
+            {/* 2. Recibo de Pagamento - RETORNADO */}
+            <span className="texto-detalhe" style={{ fontSize: '10px', marginBottom: '5px' }}>
+              Recibo de Pagamento
+            </span>
             
-            <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '15px 0 5px 0', lineHeight: '1.1' }}>
+            {/* 3. Nome do Produto */}
+            <span className="bold-extreme" style={{ fontSize: '20px', margin: '8px 0 2px 0', lineHeight: '1.1' }}>
               {item.nome.toUpperCase()}
-            </div>
+            </span>
             
-            <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>
+            {/* 4. Preço */}
+            <span className="bold-extreme" style={{ fontSize: '22px', marginBottom: '10px' }}>
               R$ {Number(item.preco).toFixed(2).replace('.', ',')}
-            </div>
+            </span>
             
-            <div style={{ fontSize: '10px', marginTop: '10px' }}>
-              <p style={{ margin: '0' }}>{new Date(data).toLocaleString('pt-BR')}</p>
-              <p style={{ margin: '5px 0 0 0' }}>Obrigado pela preferência!</p>
+            {/* 5. Data e Hora - RETORNADO */}
+            <div className="texto-detalhe" style={{ fontSize: '10px', marginTop: '5px' }}>
+              <span>{new Date(data).toLocaleString('pt-BR')}</span>
+            </div>
+
+            {/* 6. Agradecimento - RETORNADO */}
+            <div className="texto-detalhe" style={{ fontSize: '11px', marginTop: '5px' }}>
+              <span>Obrigado pela preferência!</span>
             </div>
           </div>
         ))
