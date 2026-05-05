@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 
 export default function ReciboImpressao({ evento, itens, total, data, onAfterPrint }) {
   useEffect(() => {
-    // Chama a impressão do navegador logo que o componente renderiza
-    window.print();
+    // Pequeno delay para garantir que o DOM foi renderizado antes de imprimir
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
 
-    // Quando a janela de impressão for fechada, conclui a venda no Caixa
     const handleAfterPrint = () => {
       if (onAfterPrint) onAfterPrint();
     };
@@ -14,39 +15,43 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
     window.addEventListener('afterprint', handleAfterPrint);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('afterprint', handleAfterPrint);
     };
   }, [onAfterPrint]);
 
-  // Altura base (cabeçalho, total, rodapé) de 40mm + 3mm por produto (10x menor que os 30mm)
-  const baseHeight = 40;
-  const pageHeight = baseHeight + (itens?.length || 1) * 3;
-
   const printContent = (
-    <div className="recibo-print print-container text-black bg-white">
+    <div className="print-container">
       <style>
         {`
           @media print {
             @page {
-              size: 57.5mm ${pageHeight}mm;
+              size: 58mm auto; /* Define largura fixa e altura automática */
               margin: 0;
             }
-            html, body {
-              height: auto !important;
-              overflow: visible !important;
-              background: white;
-              margin: 0 !important;
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: white;
             }
-            /* Oculta o layout principal do React e mostra apenas o Portal do Recibo */
             #root {
               display: none !important;
             }
             .print-container {
               display: block !important;
-              width: 57.5mm;
-              font-family: monospace; 
-              font-size: 12px;
-              padding: 2mm; /* Respiro para a tinta não encostar na borda */
+              width: 58mm;
+              padding: 2mm;
+              font-family: 'Courier New', Courier, monospace;
+            }
+            .item-recibo {
+              page-break-inside: avoid; /* Evita que um item seja cortado no meio */
+              border-bottom: 1px dashed #000; /* Linha opcional para separar visualmente na hora de cortar */
+              padding-bottom: 10mm;
+              padding-top: 5mm;
+              text-align: center;
+            }
+            .item-recibo:last-child {
+              border-bottom: none;
             }
           }
           @media screen {
@@ -57,36 +62,32 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
         `}
       </style>
 
-      {/* ─── Layout do Recibo ─── */}
-      <div className="text-center mb-2">
-        <h1 className="font-bold text-base uppercase leading-tight">{evento}</h1>
-        <p className="text-[10px] mt-1">Recibo de Pagamento</p>
-      </div>
-
-      <div className="border-t border-b border-black border-dashed py-2 my-2 space-y-1">
-        {itens && itens.map((item, index) => (
-          <div key={index} className="flex justify-between items-center text-xs">
-            <span className="truncate pr-2">{item.quantidade}x {item.nome}</span>
-            <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
+      {/* Mapeamento dos itens: gera um bloco completo para cada unidade vendida */}
+      {itens?.map((item, idx) => 
+        Array.from({ length: item.quantidade }).map((_, unidadeIdx) => (
+          <div key={`${item.id}-${idx}-${unidadeIdx}`} className="item-recibo">
+            <h1 style={{ fontSize: '14px', margin: '0', fontWeight: 'bold', textTransform: 'uppercase' }}>
+              {evento}
+            </h1>
+            <p style={{ fontSize: '10px', margin: '2px 0' }}>Recibo de Pagamento</p>
+            
+            <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '15px 0 5px 0', lineHeight: '1.1' }}>
+              {item.nome.toUpperCase()}
+            </div>
+            
+            <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>
+              R$ {Number(item.preco).toFixed(2).replace('.', ',')}
+            </div>
+            
+            <div style={{ fontSize: '10px', marginTop: '10px' }}>
+              <p style={{ margin: '0' }}>{new Date(data).toLocaleString('pt-BR')}</p>
+              <p style={{ margin: '5px 0 0 0' }}>Obrigado pela preferência!</p>
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className="flex justify-between font-bold text-sm mt-2">
-        <span>TOTAL</span>
-        <span>R$ {Number(total).toFixed(2)}</span>
-      </div>
-
-      <div className="text-center text-[10px] mt-4">
-        <p>{new Date(data).toLocaleString('pt-BR')}</p>
-        <p className="mt-2">Obrigado pela preferência!</p>
-      </div>
-      
-      {/* Avanço do papel e o ponto para a serrilha */}
-      <div style={{ height: '5mm' }} />
+        ))
+      )}
     </div>
   );
 
-  // Joga o HTML do recibo diretamente no corpo (body) do site, evitando que o layout do #root atrapalhe a impressão
   return createPortal(printContent, document.body);
 }

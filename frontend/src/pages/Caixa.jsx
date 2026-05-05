@@ -25,7 +25,7 @@ function carregarVendas() {
   } catch {
     return []
   }
-}
+}""
 
 // Estados do pagamento: 'idle' | 'escolha' | 'aguardando_cartao' | 'aguardando_pix' | 'confirmado' | 'erro'
 
