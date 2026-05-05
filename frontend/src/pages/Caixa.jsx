@@ -110,7 +110,7 @@ export default function Caixa() {
       const vendasAtuais = carregarVendas();
       salvarVendas([...vendasAtuais, venda]);
       setReciboInfo({
-        evento: 'OpenFest',
+        evento: 'SwingSamba',
         itens: carrinho,
         total: total,
         data: new Date(),
@@ -151,7 +151,7 @@ export default function Caixa() {
         const res = await fetch('/api/pagamento/pix', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ valor: total, descricao: 'Venda OpenFest' }),
+          body: JSON.stringify({ valor: total, descricao: 'Venda SwingSamba' }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
@@ -168,7 +168,7 @@ export default function Caixa() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           valor: total,
-          descricao: 'Venda OpenFest',
+          descricao: 'Venda SwingSamba',
           tipo: tipo === 'Crédito' ? 'credito' : 'debito',
         }),
       });
