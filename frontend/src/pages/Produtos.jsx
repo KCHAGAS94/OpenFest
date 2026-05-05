@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 
+// Funções de Persistência
 function carregarProdutos() {
   try {
     return JSON.parse(localStorage.getItem('openfest_produtos')) || []
@@ -9,234 +10,277 @@ function carregarProdutos() {
   }
 }
 
-function salvarProdutos(lista) {
-  localStorage.setItem('openfest_produtos', JSON.stringify(lista))
+function salvarProdutos(produtos) {
+  localStorage.setItem('openfest_produtos', JSON.stringify(produtos))
 }
 
 export default function Produtos() {
   const [produtos, setProdutos] = useState(carregarProdutos)
-  const [form, setForm] = useState({ nome: '', preco: '', estoque: '' })
-  const [erro, setErro] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editId, setEditId] = useState(null)
+  
+  // Estados dos Modais
+  const [modalAberto, setModalAberto] = useState(false)
+  const [modalExcluirAberto, setModalExcluirAberto] = useState(false)
+  
+  // Estados de Controle
+  const [editandoId, setEditandoId] = useState(null)
+  const [produtoParaExcluir, setProdutoParaExcluir] = useState(null)
+  
+  const [form, setForm] = useState({
+    nome: '',
+    preco: '',
+    estoque: '',
+    bloqueado: false
+  })
 
+  // Sincroniza com localStorage sempre que a lista mudar
   useEffect(() => {
     salvarProdutos(produtos)
   }, [produtos])
 
-  function handleChange(e) {
-    const { name, value } = e.target
-    if (name === 'preco') {
-      // Remove tudo que não for dígito
-      const onlyNums = value.replace(/\D/g, '')
-      // Converte para centavos
-      let centavos = parseInt(onlyNums, 10)
-      if (isNaN(centavos)) centavos = 0
-      // Formata para reais
-      const reais = (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      setForm({ ...form, preco: reais })
+  // --- Funções de Ação ---
+
+  function abrirModalCadastro() {
+    setEditandoId(null)
+    setForm({ nome: '', preco: '', estoque: '', bloqueado: false })
+    setModalAberto(true)
+  }
+
+  function abrirModalEdicao(produto) {
+    setEditandoId(produto.id)
+    setForm({
+      nome: produto.nome,
+      preco: produto.preco.toString(),
+      estoque: produto.estoque.toString(),
+      bloqueado: produto.bloqueado || false
+    })
+    setModalAberto(true)
+  }
+
+  function handleSalvar(e) {
+    e.preventDefault()
+    
+    if (editandoId) {
+      const novosProdutos = produtos.map(p => {
+        if (p.id === editandoId) {
+          return {
+            ...p,
+            nome: form.nome,
+            preco: parseFloat(form.preco),
+            estoque: parseInt(form.estoque),
+            bloqueado: form.bloqueado
+          }
+        }
+        return p
+      })
+      setProdutos(novosProdutos)
     } else {
-      setForm({
-        ...form,
-        [name]: name === 'nome' ? value.toUpperCase() : value
-      })
+      const novoProduto = {
+        id: Date.now(),
+        nome: form.nome,
+        preco: parseFloat(form.preco),
+        estoque: parseInt(form.estoque),
+        bloqueado: form.bloqueado
+      }
+      setProdutos([...produtos, novoProduto])
+    }
+    setModalAberto(false)
+  }
+
+  // --- Funções de Exclusão Customizada ---
+
+  function prepararExclusao(produto) {
+    setProdutoParaExcluir(produto)
+    setModalExcluirAberto(true)
+  }
+
+  function confirmarExclusao() {
+    if (produtoParaExcluir) {
+      const novaLista = produtos.filter(p => p.id !== produtoParaExcluir.id)
+      setProdutos(novaLista)
+      setModalExcluirAberto(false)
+      setProdutoParaExcluir(null)
     }
   }
 
-  function handleAdicionar(e) {
-    e.preventDefault()
-    setErro('')
-
-    const nome = form.nome.trim()
-    const preco = parseFloat(form.preco.replace('.', '').replace(',', '.'))
-    const estoque = parseInt(form.estoque, 10)
-
-    if (!nome) return setErro('Informe o nome do produto.')
-    if (isNaN(preco) || preco <= 0) return setErro('Informe um preço válido.')
-    if (isNaN(estoque) || estoque < 0) return setErro('Informe um estoque válido.')
-
-    const novo = { id: Date.now(), nome, preco, estoque }
-    setProdutos((prev) => [...prev, novo])
-    setForm({ nome: '', preco: '', estoque: '' })
-  }
-
-  function handleRemover(id) {
-    setProdutos((prev) => prev.filter((p) => p.id !== id))
-  }
-
-  function handleEditar(id) {
-    const prod = produtos.find((p) => p.id === id)
-    if (prod) {
-      setForm({
-        nome: prod.nome,
-        preco: prod.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        estoque: prod.estoque.toString()
-      })
-      setEditId(id)
-      setModalOpen(true)
-    }
-  }
-
-  function handleSalvarEdicao(e) {
-    e.preventDefault()
-    setErro('')
-    const nome = form.nome.trim()
-    const preco = parseFloat(form.preco.replace('.', '').replace(',', '.'))
-    const estoque = parseInt(form.estoque, 10)
-    if (!nome) return setErro('Informe o nome do produto.')
-    if (isNaN(preco) || preco <= 0) return setErro('Informe um preço válido.')
-    if (isNaN(estoque) || estoque < 0) return setErro('Informe um estoque válido.')
-    setProdutos((prev) => prev.map((p) => p.id === editId ? { ...p, nome, preco, estoque } : p))
-    setModalOpen(false)
-    setEditId(null)
-    setForm({ nome: '', preco: '', estoque: '' })
+  function alternarBloqueio(id) {
+    const novaLista = produtos.map(p => 
+      p.id === id ? { ...p, bloqueado: !p.bloqueado } : p
+    )
+    setProdutos(novaLista)
   }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
-
-      <main className="max-w-3xl mx-auto px-6 py-10">
-        <h2 className="text-2xl font-semibold mb-1">Produtos</h2>
-        <p className="text-gray-500 text-sm mb-8">
-          Adicione os produtos disponíveis para venda no caixa.
-        </p>
-
-        {/* Formulário */}
-        <form
-          onSubmit={handleAdicionar}
-          className="bg-gray-900 border border-white/10 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row gap-3"
-        >
-          <input
-            type="text"
-            name="nome"
-            value={form.nome}
-            onChange={handleChange}
-            placeholder="Nome do produto"
-            className="flex-1 px-4 py-2.5 rounded-lg bg-gray-800 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
-          />
-          <input
-            type="text"
-            name="preco"
-            value={form.preco}
-            onChange={handleChange}
-            placeholder="Preço (ex: 5,00)"
-            className="w-32 px-4 py-2.5 rounded-lg bg-gray-800 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
-          />
-          <input
-            type="number"
-            name="estoque"
-            value={form.estoque}
-            onChange={handleChange}
-            placeholder="Estoque"
-            min="0"
-            className="w-28 px-4 py-2.5 rounded-lg bg-gray-800 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition appearance-none"
-          />
-          <button
-            type="submit"
-            className="px-6 py-2.5 bg-pink-500 hover:bg-pink-600 rounded-lg font-semibold text-white transition-colors whitespace-nowrap"
-          >
-            + Adicionar
-          </button>
-        </form>
-
-        {erro && (
-          <p className="text-red-400 text-sm mb-4 bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-2">
-            {erro}
-          </p>
-        )}
-
-        {/* Lista */}
-        {produtos.length === 0 ? (
-          <div className="text-center py-16 text-gray-600">
-            <p className="text-4xl mb-3">📦</p>
-            <p className="text-sm">Nenhum produto cadastrado ainda.</p>
+      
+      <main className="max-w-6xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-100">Gestão de Produtos</h1>
+            <p className="text-gray-400 text-sm">Cadastre e gerencie os itens do evento</p>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {produtos.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between bg-gray-900 border border-white/10 rounded-xl px-5 py-3"
-              >
-                <span className="font-medium text-white">{p.nome}</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-pink-400 font-bold">
-                    R$ {p.preco.toFixed ? p.preco.toFixed(2) : Number(p.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-blue-400 font-semibold">
-                    Estoque: {p.estoque}
-                  </span>
-                  <button
-                    onClick={() => handleEditar(p.id)}
-                    title="Editar"
-                    className="text-gray-400 hover:text-yellow-400 text-lg transition-colors mr-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19h14v2H5v-2Zm13.71-11.29-2.42-2.42a1 1 0 0 0-1.41 0l-9.18 9.18A1 1 0 0 0 5 15v2a1 1 0 0 0 1 1h2a1 1 0 0 0 .71-.29l9.18-9.18a1 1 0 0 0 0-1.41ZM7 16v-1.59l8.59-8.59 1.59 1.59L8.59 16H7Z"/></svg>
-                  </button>
-                  <button
-                    onClick={() => handleRemover(p.id)}
-                    title="Remover"
-                    className="text-gray-600 hover:text-red-400 text-lg transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3v1H4v2h16V4h-5V3h-6Zm2 4v10h2V7h-2Zm-4 0v10h2V7H7Zm8 0v10h2V7h-2Z"/></svg>
-                  </button>
+          <button 
+            onClick={abrirModalCadastro}
+            className="bg-pink-500 hover:bg-pink-600 px-6 py-2 rounded-xl font-semibold transition-all shadow-lg shadow-pink-900/20 active:scale-95"
+          >
+            + Novo Produto
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {produtos.map(produto => (
+            <div key={produto.id} className="bg-gray-900 border border-white/10 rounded-2xl p-5 hover:border-pink-500/30 transition-all group">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-lg group-hover:text-pink-400 transition-colors">{produto.nome}</h3>
+                  <p className="text-pink-400 font-bold">R$ {produto.preco.toFixed(2)}</p>
+                  <p className="text-xs text-gray-400 mt-1">Estoque: {produto.estoque ?? '-'}</p>
+                </div>
+                <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${produto.bloqueado ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                  {produto.bloqueado ? 'BLOQUEADO' : 'ATIVO'}
+                </span>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button 
+                  onClick={() => abrirModalEdicao(produto)}
+                  className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors font-medium"
+                >
+                  Editar
+                </button>
+                <button 
+                  onClick={() => alternarBloqueio(produto.id)}
+                  className={`px-3 py-2 rounded-lg text-sm transition-colors ${produto.bloqueado ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20'}`}
+                  title={produto.bloqueado ? "Desbloquear no Caixa" : "Bloquear no Caixa"}
+                >
+                  {produto.bloqueado ? '🔓' : '🚫'}
+                </button>
+                <button 
+                  onClick={() => prepararExclusao(produto)}
+                  className="px-3 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm transition-colors"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* MODAL DE CADASTRO / EDIÇÃO */}
+      {modalAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setModalAberto(false)} />
+          <form 
+            onSubmit={handleSalvar}
+            className="relative bg-gray-900 border border-white/10 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in zoom-in duration-200"
+          >
+            <h2 className="text-xl font-bold mb-6 text-gray-100">
+              {editandoId ? '📝 Editar Produto' : '🛍️ Novo Produto'}
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Nome do Produto</label>
+                <input 
+                  required
+                  type="text"
+                  value={form.nome}
+                  onChange={e => setForm({...form, nome: e.target.value})}
+                  className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+                  placeholder="Ex: Cerveja Lata"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Preço (R$)</label>
+                  <input 
+                    required
+                    type="number"
+                    step="0.01"
+                    value={form.preco}
+                    onChange={e => setForm({...form, preco: e.target.value})}
+                    className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Estoque</label>
+                  <input 
+                    required
+                    type="number"
+                    value={form.estoque}
+                    onChange={e => setForm({...form, estoque: e.target.value})}
+                    className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* Modal de edição */}
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-white/10 rounded-2xl p-8 w-full max-w-md relative">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="absolute top-3 right-3 text-gray-400 hover:text-red-400 text-xl"
-                title="Fechar"
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                <input 
+                  type="checkbox"
+                  id="bloqueado"
+                  checked={form.bloqueado}
+                  onChange={e => setForm({...form, bloqueado: e.target.checked})}
+                  className="w-5 h-5 accent-pink-500 rounded cursor-pointer"
+                />
+                <label htmlFor="bloqueado" className="text-sm text-gray-300 cursor-pointer select-none">
+                  Bloquear este produto no caixa
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button 
+                type="button"
+                onClick={() => setModalAberto(false)}
+                className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-colors"
               >
-                ×
+                Cancelar
               </button>
-              <h3 className="text-xl font-semibold mb-6">Editar Produto</h3>
-              <form onSubmit={handleSalvarEdicao} className="flex flex-col gap-4">
-                <input
-                  type="text"
-                  name="nome"
-                  value={form.nome}
-                  onChange={handleChange}
-                  placeholder="Nome do produto"
-                  className="px-4 py-2.5 rounded-lg bg-gray-800 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
-                />
-                <input
-                  type="text"
-                  name="preco"
-                  value={form.preco}
-                  onChange={handleChange}
-                  placeholder="Preço (ex: 5,00)"
-                  className="px-4 py-2.5 rounded-lg bg-gray-800 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
-                />
-                <input
-                  type="number"
-                  name="estoque"
-                  value={form.estoque}
-                  onChange={handleChange}
-                  placeholder="Estoque"
-                  min="0"
-                  className="px-4 py-2.5 rounded-lg bg-gray-800 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition appearance-none"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-pink-500 hover:bg-pink-600 rounded-lg font-semibold text-white transition-colors"
+              <button 
+                type="submit"
+                className="flex-1 py-3 bg-pink-500 hover:bg-pink-600 rounded-xl font-semibold transition-all active:scale-95"
+              >
+                {editandoId ? 'Salvar' : 'Cadastrar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL DE EXCLUSÃO ESTILIZADO */}
+      {modalExcluirAberto && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setModalExcluirAberto(false)} />
+          <div className="relative bg-gray-900 border border-red-500/20 w-full max-w-sm rounded-3xl p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4 text-2xl">
+                ⚠️
+              </div>
+              <h2 className="text-xl font-bold text-gray-100 mb-2">Excluir Produto?</h2>
+              <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                Tem certeza que deseja remover <span className="text-white font-bold italic">"{produtoParaExcluir?.nome}"</span>? <br/>
+                Esta ação não pode ser desfeita.
+              </p>
+
+              <div className="flex w-full gap-3">
+                <button 
+                  onClick={() => setModalExcluirAberto(false)}
+                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-colors text-sm"
                 >
-                  Salvar Alterações
+                  Manter
                 </button>
-              </form>
+                <button 
+                  onClick={confirmarExclusao}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-semibold transition-all text-sm active:scale-95 shadow-lg shadow-red-900/20"
+                >
+                  Sim, Excluir
+                </button>
+              </div>
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   )
 }
-
