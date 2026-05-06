@@ -1,3 +1,15 @@
+  // Função para enviar recibo ao backend para impressão
+  async function imprimirReciboBackend(recibo) {
+    try {
+      await fetch('/api/print', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recibo),
+      });
+    } catch (err) {
+      alert('Erro ao enviar recibo para impressão!');
+    }
+  }
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import ReciboImpressao from '../components/ReciboImpressao'
@@ -5,9 +17,11 @@ import '../print.css';
 
 function carregarProdutos() {
   try {
-    return JSON.parse(localStorage.getItem('openfest_produtos')) || []
+    const produtos = JSON.parse(localStorage.getItem('openfest_produtos')) || [];
+    // Garante que preco é sempre número
+    return produtos.map(p => ({ ...p, preco: Number(p.preco) || 0 }));
   } catch {
-    return []
+    return [];
   }
 }
 
@@ -62,11 +76,12 @@ export default function Caixa() {
       const existe = prev.find((i) => i.id === produto.id);
       const estoqueDisponivel = produto.estoque ?? Infinity;
       if (existe) {
-        if (existe.quantidade >= estoqueDisponivel) return prev; // Não permite passar do estoque
+        if (existe.quantidade >= estoqueDisponivel) return prev;
         return prev.map((i) => i.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i);
       }
       if (estoqueDisponivel <= 0) return prev;
-      return [...prev, { ...produto, quantidade: 1 }];
+      // Garante que preco é sempre número
+      return [...prev, { ...produto, preco: Number(produto.preco) || 0, quantidade: 1 }];
     });
   }
 
@@ -95,7 +110,7 @@ export default function Caixa() {
     setErroPag('')
   }
 
-  function confirmarPagamento(tipoPagamento = 'Dinheiro') {
+  function confirmarPagamento(tipoPagamento = 'Dinheiro', imprimir = true) {
     if (poolRef.current?.interval) {
       clearInterval(poolRef.current.interval);
     } else {
@@ -106,7 +121,7 @@ export default function Caixa() {
         id: Date.now(),
         data: new Date(),
         itens: carrinho,
-        total: total,
+        total: carrinho.reduce((acc, item) => acc + Number(item.preco) * Number(item.quantidade), 0),
         vendedor: 'Sistema',
         tipoPagamento,
       };
@@ -129,12 +144,29 @@ export default function Caixa() {
       localStorage.setItem('openfest_produtos', JSON.stringify(produtosAtualizados));
       setProdutos(produtosAtualizados);
 
-      setReciboInfo({
+      // Montar dados do recibo para impressão
+      const totalRecibo = carrinho.reduce((acc, item) => {
+        const preco = Number(item.preco);
+        const qtd = Number(item.quantidade);
+        return acc + (isNaN(preco) || isNaN(qtd) ? 0 : preco * qtd);
+      }, 0);
+      const recibo = {
         evento: 'SwingSamba',
-        itens: [...carrinho],
-        total: total,
-        data: new Date(),
-      });
+        itens: carrinho.map(item => {
+          const preco = Number(item.preco);
+          const qtd = Number(item.quantidade);
+          return {
+            nome: item.nome,
+            quantidade: isNaN(qtd) ? 0 : qtd,
+            total: (isNaN(preco) || isNaN(qtd)) ? 0 : preco * qtd
+          };
+        }),
+        total: isNaN(totalRecibo) ? 0 : totalRecibo,
+        data: new Date().toLocaleString('pt-BR'),
+        pagamento: tipoPagamento,
+      };
+      setReciboInfo(recibo);
+      if (imprimir) imprimirReciboBackend(recibo);
     }
     setEtapa('confirmado');
   }
@@ -148,7 +180,8 @@ export default function Caixa() {
         const data = await res.json();
         if (data.status === 'approved') {
           clearInterval(poolRef.current.interval);
-          confirmarPagamento(tipoPagamento);
+          // Só imprime após aprovação do Pix
+          confirmarPagamento(tipoPagamento, true);
         }
       } catch {}
     }, 3000);
@@ -226,7 +259,7 @@ export default function Caixa() {
             <div key={item.id} className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{item.nome}</p>
-                <p className="text-xs text-gray-400">R$ {item.preco.toFixed(2)} × {item.quantidade}</p>
+                <p className="text-xs text-gray-400">R$ {(Number(item.preco) || 0).toFixed(2)} × {item.quantidade}</p>
               </div>
               <div className="flex items-center gap-2 ml-2">
                 <button onClick={() => removerItem(item.id)} className="w-7 h-7 rounded-full bg-gray-700 hover:bg-pink-600 text-sm font-bold transition-colors">−</button>
@@ -380,7 +413,7 @@ export default function Caixa() {
               {produtosVisiveis.map((produto) => (
                 <button key={produto.id} onClick={() => adicionarItem(produto)} className="bg-gray-900 border border-white/10 rounded-xl p-4 text-left hover:border-pink-500/50 hover:bg-gray-800 transition-all active:scale-95">
                   <p className="font-medium text-white text-sm leading-tight">{produto.nome}</p>
-                  <p className="text-pink-400 font-bold mt-2">R$ {produto.preco.toFixed(2)}</p>
+                  <p className="text-pink-400 font-bold mt-2">R$ {(Number(produto.preco) || 0).toFixed(2)}</p>
                   <p className="text-xs text-gray-400 mt-1">Estoque: {produto.estoque ?? '-'}</p>
                 </button>
               ))}
@@ -398,7 +431,7 @@ export default function Caixa() {
             {produtosVisiveis.map((produto) => (
               <button key={produto.id} onClick={() => adicionarItem(produto)} className="bg-gray-900 border border-white/10 rounded-xl p-4 text-left active:scale-95">
                 <p className="font-medium text-white text-sm leading-tight">{produto.nome}</p>
-                <p className="text-pink-400 font-bold mt-2">R$ {produto.preco.toFixed(2)}</p>
+                <p className="text-pink-400 font-bold mt-2">R$ {(Number(produto.preco) || 0).toFixed(2)}</p>
                 <p className="text-xs text-gray-400 mt-1">Estoque: {produto.estoque ?? '-'}</p>
               </button>
             ))}

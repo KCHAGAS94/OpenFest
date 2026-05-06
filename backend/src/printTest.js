@@ -3,42 +3,48 @@ import { printer as ThermalPrinter, types as PrinterTypes } from "node-thermal-p
 
 // ATENÇÃO: Troque pelo nome exato da sua impressora conforme aparece no Windows
 
-const defaultPrinterName = "KP-IM607"; // Altere se necessário
+const defaultPrinterName = "KP-IM607-2"; // Nome exato da impressora no Windows
 
 
-let printer = new ThermalPrinter({
-  type: PrinterTypes.EPSON, // A maioria das térmicas usa EPSON
-  interface: `printer:${defaultPrinterName}`,
-  options: {
-    timeout: 5000
-  }
-});
-
-
-async function printReceipt() {
+export async function printReceipt({ evento = "OPENFEST", itens = [], total = 0, data = "", pagamento = "", observacao = "" }) {
+  let printer = new ThermalPrinter({
+    type: PrinterTypes.EPSON,
+    interface: `printer:${defaultPrinterName}`,
+    options: { timeout: 5000 }
+  });
   printer.alignCenter();
-  printer.println("OPENFEST");
+  printer.println(evento);
   printer.println("Recibo de Pagamento");
   printer.drawLine();
-  printer.alignLeft();
-  printer.println("2x CARNE VACA      R$ 0.20");
+  printer.alignCenter();
+  itens.forEach(item => {
+    printer.println(`${item.quantidade}x ${item.nome}  R$ ${Number(item.total).toFixed(2)}`);
+  });
   printer.drawLine();
   printer.bold(true);
-  printer.println("TOTAL         R$ 0.20");
+  printer.alignCenter();
+  printer.println(`TOTAL  R$ ${Number(total).toFixed(2)}`);
   printer.bold(false);
+  if (pagamento) {
+    printer.alignCenter();
+    printer.println(`Pagamento: ${pagamento}`);
+  }
+  if (observacao) {
+    printer.alignCenter();
+    printer.println(observacao);
+  }
   printer.drawLine();
   printer.alignCenter();
-  printer.println("30/04/2026, 06:49:03");
+  printer.println(data);
   printer.println("");
   printer.println("Obrigado pela preferência!");
   printer.cut();
-
   try {
     let execute = await printer.execute();
     console.log("Impressão enviada!", execute);
+    return true;
   } catch (error) {
     console.error("Erro ao imprimir:", error);
+    throw error;
   }
 }
-
-printReceipt();
