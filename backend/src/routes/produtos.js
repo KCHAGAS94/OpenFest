@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as produtosController from '../controllers/produtosController.js';
+
 const router = express.Router();
-const produtosController = require('../controllers/produtosController');
 
 // Rota para cadastrar produto com estoque
 router.post('/', produtosController.cadastrarProduto);
@@ -8,4 +9,4 @@ router.post('/', produtosController.cadastrarProduto);
 // Rota para listar produtos
 router.get('/', produtosController.listarProdutos);
 
-module.exports = router;
+export default router;

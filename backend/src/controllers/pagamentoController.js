@@ -1,14 +1,15 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 
 // Validação de variáveis de ambiente essenciais
-if (!process.env.MP_ACCESS_TOKEN) {
-  console.error('A variável de ambiente MP_ACCESS_TOKEN não está definida.')
+if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
+  console.error('A variável de ambiente MERCADO_PAGO_ACCESS_TOKEN não está definida.')
   // Em um app real, você poderia querer que o servidor nem subisse.
   // process.exit(1);
 }
 
+console.log('Token Mercado Pago:', process.env.MERCADO_PAGO_ACCESS_TOKEN)
 const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN,
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
 })
 
 const payment = new Payment(mpClient)
@@ -32,6 +33,7 @@ export async function criarPix(req, res) {
           email: emailPagador || 'cliente@openfest.com',
         },
       },
+      access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN,
     })
 
     const pix = resposta.point_of_interaction?.transaction_data

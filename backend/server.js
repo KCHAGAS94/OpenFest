@@ -3,7 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import authRoutes from './src/routes/auth.js'
 import pagamentoRoutes from './src/routes/pagamento.js'
-import portariaRoutes from './src/routes/portaria.js' // Importe as rotas da portaria
+// import portariaRoutes from './src/routes/portaria.js' // Importe as rotas da portaria
 import produtosRoutes from './src/routes/produtos.js'
 
 dotenv.config({ override: true })
@@ -18,7 +18,7 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/pagamento', pagamentoRoutes)
-app.use('/api/portaria', portariaRoutes) // Use as rotas da portaria
+// app.use('/api/portaria', portariaRoutes)
 app.use('/api/produtos', produtosRoutes)
 
 // Health check
