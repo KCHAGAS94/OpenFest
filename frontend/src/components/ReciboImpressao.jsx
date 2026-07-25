@@ -50,11 +50,14 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
 
             .item-recibo {
               page-break-inside: avoid;
+              page-break-after: avoid;
+              break-inside: avoid;
+              break-after: avoid;
               text-align: center;
-              padding: 4mm 0mm 8mm 0mm; 
+              padding: 4mm 0mm 8mm 0mm;
               border-bottom: 0.5pt dashed #000;
               /* Aumentamos a largura para garantir que o texto centralizado não suma */
-              width: 60mm; 
+              width: 60mm;
               box-sizing: border-box;
             }
 
@@ -105,7 +108,7 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
             
             {/* 5. Data e Hora - RETORNADO */}
             <div className="texto-detalhe" style={{ fontSize: '10px', marginTop: '5px' }}>
-              <span>{new Date(data).toLocaleString('pt-BR')}</span>
+              <span>{data}</span>
             </div>
 
             {/* 6. Agradecimento - RETORNADO */}

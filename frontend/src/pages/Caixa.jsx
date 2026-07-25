@@ -158,6 +158,7 @@ export default function Caixa() {
           return {
             nome: item.nome,
             quantidade: isNaN(qtd) ? 0 : qtd,
+            preco: isNaN(preco) ? 0 : preco,
             total: (isNaN(preco) || isNaN(qtd)) ? 0 : preco * qtd
           };
         }),
