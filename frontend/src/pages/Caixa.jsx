@@ -380,8 +380,7 @@ export default function Caixa() {
                   <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code PIX" className="w-48 h-48 mx-auto rounded-xl bg-white p-2" />
                   <button onClick={() => navigator.clipboard.writeText(pixData.qr_code)} className="w-full text-xs bg-gray-800 mt-3 text-gray-300 rounded-lg px-3 py-2 truncate uppercase">{pixData.qr_code?.slice(0, 30)}...</button>
                   <div className="flex items-center justify-center gap-2 mt-4 text-gray-500 text-sm"><div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />Aguardando...</div>
-                  <button onClick={() => confirmarPagamento('Pix')} className="mt-4 w-full py-2 bg-green-600 rounded-xl text-white text-sm">✓ Já paguei</button>
-                  <button onClick={fecharPagamento} className="mt-2 text-gray-600 text-sm">Cancelar</button>
+                  <button onClick={fecharPagamento} className="mt-4 text-gray-600 text-sm">Cancelar</button>
                 </div>
               )}
 

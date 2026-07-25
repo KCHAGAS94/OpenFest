@@ -7,7 +7,6 @@ if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
   // process.exit(1);
 }
 
-console.log('Token Mercado Pago:', process.env.MERCADO_PAGO_ACCESS_TOKEN)
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
 })
@@ -33,7 +32,6 @@ export async function criarPix(req, res) {
           email: emailPagador || 'cliente@openfest.com',
         },
       },
-      access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN,
     })
 
     const pix = resposta.point_of_interaction?.transaction_data
@@ -78,11 +76,11 @@ export async function criarCobrancaCartao(req, res) {
 
   try {
     const resposta = await fetch(
-      `<https://api.mercadopago.com/point/integration-api/devices/${deviceId}/payment-intents>`,
+      `https://api.mercadopago.com/point/integration-api/devices/${deviceId}/payment-intents`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${mpClient.accessToken}`,
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -141,7 +139,7 @@ export async function listarDispositivos(_req, res) {
       'https://api.mercadopago.com/point/integration-api/devices',
       {
         headers: {
-          Authorization: `Bearer ${mpClient.accessToken}`,
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
         },
       }
     )
@@ -161,11 +159,11 @@ export async function listarDispositivos(_req, res) {
 
 // ─── DEBUG (remover em produção) ──────────────────────
 export function debugToken(_req, res) {
-  const token = process.env.MP_ACCESS_TOKEN || ''
+  const token = process.env.MERCADO_PAGO_ACCESS_TOKEN || ''
   if (!token) {
     return res.json({
       token_definido: false,
-      mensagem: 'A variável de ambiente MP_ACCESS_TOKEN não está configurada.'
+      mensagem: 'A variável de ambiente MERCADO_PAGO_ACCESS_TOKEN não está configurada.'
     })
   }
 
