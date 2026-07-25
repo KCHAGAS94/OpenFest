@@ -155,10 +155,12 @@ export default function Caixa() {
         itens: carrinho.map(item => {
           const preco = Number(item.preco);
           const qtd = Number(item.quantidade);
+          const unidadesCombo = item.tipo === 'combo' ? (Number(item.unidadesCombo) || 1) : 1;
+          const precoUnitario = isNaN(preco) ? 0 : preco / unidadesCombo;
           return {
             nome: item.nome,
-            quantidade: isNaN(qtd) ? 0 : qtd,
-            preco: isNaN(preco) ? 0 : preco,
+            quantidade: isNaN(qtd) ? 0 : qtd * unidadesCombo,
+            preco: precoUnitario,
             total: (isNaN(preco) || isNaN(qtd)) ? 0 : preco * qtd
           };
         }),

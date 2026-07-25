@@ -29,7 +29,9 @@ export default function Produtos() {
     nome: '',
     preco: '',
     estoque: '',
-    bloqueado: false
+    bloqueado: false,
+    tipo: 'unidade',
+    unidadesCombo: ''
   })
 
   // Sincroniza com localStorage sempre que a lista mudar
@@ -41,7 +43,7 @@ export default function Produtos() {
 
   function abrirModalCadastro() {
     setEditandoId(null)
-    setForm({ nome: '', preco: '', estoque: '', bloqueado: false })
+    setForm({ nome: '', preco: '', estoque: '', bloqueado: false, tipo: 'unidade', unidadesCombo: '' })
     setModalAberto(true)
   }
 
@@ -51,36 +53,35 @@ export default function Produtos() {
       nome: produto.nome,
       preco: produto.preco.toString(),
       estoque: produto.estoque.toString(),
-      bloqueado: produto.bloqueado || false
+      bloqueado: produto.bloqueado || false,
+      tipo: produto.tipo || 'unidade',
+      unidadesCombo: produto.unidadesCombo ? produto.unidadesCombo.toString() : ''
     })
     setModalAberto(true)
   }
 
   function handleSalvar(e) {
     e.preventDefault()
-    
+
+    const dadosComuns = {
+      nome: form.nome,
+      preco: parseFloat(form.preco),
+      estoque: parseInt(form.estoque),
+      bloqueado: form.bloqueado,
+      tipo: form.tipo,
+      unidadesCombo: form.tipo === 'combo' ? parseInt(form.unidadesCombo) || 1 : undefined
+    }
+
     if (editandoId) {
       const novosProdutos = produtos.map(p => {
         if (p.id === editandoId) {
-          return {
-            ...p,
-            nome: form.nome,
-            preco: parseFloat(form.preco),
-            estoque: parseInt(form.estoque),
-            bloqueado: form.bloqueado
-          }
+          return { ...p, ...dadosComuns }
         }
         return p
       })
       setProdutos(novosProdutos)
     } else {
-      const novoProduto = {
-        id: Date.now(),
-        nome: form.nome,
-        preco: parseFloat(form.preco),
-        estoque: parseInt(form.estoque),
-        bloqueado: form.bloqueado
-      }
+      const novoProduto = { id: Date.now(), ...dadosComuns }
       setProdutos([...produtos, novoProduto])
     }
     setModalAberto(false)
@@ -134,6 +135,9 @@ export default function Produtos() {
                 <div>
                   <h3 className="font-bold text-lg group-hover:text-pink-400 transition-colors">{produto.nome}</h3>
                   <p className="text-pink-400 font-bold">R$ {produto.preco.toFixed(2)}</p>
+                  {produto.tipo === 'combo' && (
+                    <p className="text-xs text-gray-500">Combo {produto.unidadesCombo}un · R$ {(produto.preco / produto.unidadesCombo).toFixed(2)}/un</p>
+                  )}
                   <p className="text-xs text-gray-400 mt-1">Estoque: {produto.estoque ?? '-'}</p>
                 </div>
                 <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${produto.bloqueado ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
@@ -191,10 +195,32 @@ export default function Produtos() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Tipo de Venda</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm({...form, tipo: 'unidade'})}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${form.tipo === 'unidade' ? 'bg-pink-500/20 border-pink-500 text-white' : 'bg-gray-800 border-white/10 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    Unidade
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({...form, tipo: 'combo'})}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${form.tipo === 'combo' ? 'bg-pink-500/20 border-pink-500 text-white' : 'bg-gray-800 border-white/10 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    Combo
+                  </button>
+                </div>
+              </div>
+
+              <div className={`grid gap-4 ${form.tipo === 'combo' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Preço (R$)</label>
-                  <input 
+                  <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">
+                    {form.tipo === 'combo' ? 'Preço do combo (R$)' : 'Preço (R$)'}
+                  </label>
+                  <input
                     required
                     type="number"
                     step="0.01"
@@ -203,9 +229,24 @@ export default function Produtos() {
                     className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
                   />
                 </div>
+                {form.tipo === 'combo' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Unidades no combo</label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Ex: 5"
+                      value={form.unidadesCombo}
+                      onChange={e => setForm({...form, unidadesCombo: e.target.value})}
+                      className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Estoque</label>
-                  <input 
+                  <input
                     required
                     type="number"
                     value={form.estoque}
@@ -214,6 +255,12 @@ export default function Produtos() {
                   />
                 </div>
               </div>
+
+              {form.tipo === 'combo' && form.preco && form.unidadesCombo > 0 && (
+                <p className="text-xs text-gray-400 -mt-2">
+                  Valor impresso por unidade: <span className="text-pink-400 font-semibold">R$ {(parseFloat(form.preco) / parseInt(form.unidadesCombo)).toFixed(2).replace('.', ',')}</span>
+                </p>
+              )}
 
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
                 <input 
