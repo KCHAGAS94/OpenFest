@@ -43,8 +43,12 @@ export default function ProdutosRelatorio() {
     return acc
   }, {})
   // Array para gráfico
-  const produtosVendidos = Object.entries(vendasPorProduto).map(([nome, quantidade]) => ({ nome, quantidade }));
-  const maxQuantidade = Math.max(1, ...produtosVendidos.map(p => p.quantidade));
+  const totalVendidoGeral = Object.values(vendasPorProduto).reduce((sum, qtd) => sum + qtd, 0);
+  const produtosVendidos = Object.entries(vendasPorProduto).map(([nome, quantidade]) => ({
+    nome,
+    quantidade,
+    percentual: totalVendidoGeral > 0 ? (quantidade / totalVendidoGeral) * 100 : 0
+  }));
 
   // Transformar vendas em formato plano para a tabela
   // Adiciona idPedido sequencial formatado
@@ -146,12 +150,12 @@ export default function ProdutosRelatorio() {
                           <div key={produto.nome}>
                             <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
                               <span>{produto.nome}</span>
-                              <span>{produto.quantidade}</span>
+                              <span>{produto.quantidade} ({produto.percentual.toFixed(1).replace('.', ',')}%)</span>
                             </div>
                             <div className="h-10 rounded-full bg-white/5">
                               <div
                                 className="h-full rounded-full bg-blue-500"
-                                style={{ width: `${(produto.quantidade / maxQuantidade) * 100}%` }}
+                                style={{ width: `${produto.percentual}%` }}
                               />
                             </div>
                           </div>
