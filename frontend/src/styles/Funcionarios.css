@@ -86,17 +86,35 @@
   color: #888;
 }
 
+.funcionarios-tabela-wrapper {
+  max-height: 576px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 .funcionarios-tabela {
   width: 100%;
   border-collapse: collapse;
   background-color: #1a1f28;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .funcionarios-tabela thead {
   background-color: #252d3a;
+}
+
+.linha-cabecalho-fixa {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #252d3a;
+}
+
+.linha-filtro-fixa {
+  position: sticky;
+  top: 52px;
+  z-index: 10;
 }
 
 

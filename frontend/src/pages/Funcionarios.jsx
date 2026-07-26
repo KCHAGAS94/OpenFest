@@ -286,9 +286,10 @@ export default function Funcionarios() {
           {funcionarios.length === 0 ? (
             <p className="vazio-mensagem">Nenhum funcionário cadastrado ainda.</p>
           ) : (
+            <div className="funcionarios-tabela-wrapper scrollbar-tema">
             <table className="funcionarios-tabela">
               <thead>
-                <tr>
+                <tr className="linha-cabecalho-fixa">
                   <th>Nome</th>
                   <th>Função</th>
                   <th>Sálario</th>
@@ -296,7 +297,7 @@ export default function Funcionarios() {
                   <th>Status Pagamento</th>
                   <th>Ações</th>
                 </tr>
-                <tr className="filtro-linha">
+                <tr className="filtro-linha linha-filtro-fixa">
                   <th>
                     <input
                       value={filtroNome}
@@ -381,6 +382,7 @@ export default function Funcionarios() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
