@@ -27,7 +27,7 @@ export default function Relatorio() {
       if (tipo.toLowerCase() === 'crédito') tipo = 'Credito';
       if (tipo.toLowerCase() === 'pix') tipo = 'Pix';
       if (tipo.toLowerCase() === 'dinheiro') tipo = 'Dinheiro';
-      if (!pagamentos[tipo]) tipo = 'Dinheiro';
+      if (!(tipo in pagamentos)) tipo = 'Dinheiro';
       pagamentos[tipo] += venda.total;
       totalGeral += venda.total;
     });
