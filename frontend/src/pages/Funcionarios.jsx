@@ -212,7 +212,7 @@ export default function Funcionarios() {
         </section>
       </main>
 
-      <div className="funcionarios-container" style={{ background: '#0c1018', paddingTop: 0, paddingBottom: 0, minHeight: '100vh' }}>
+      <div className="funcionarios-container" style={{ background: '#000', paddingTop: 0, paddingBottom: 0, minHeight: '100vh' }}>
 
           {/* Custos totais */}
 
