@@ -136,7 +136,7 @@ export default function ProdutosRelatorio() {
                     <div>
                       <p className="text-sm text-gray-400">Gráfico de produtos vendidos</p>
                     </div>
-                    <div className="space-y-5">
+                    <div className="space-y-5 max-h-105 overflow-y-auto pr-2 scrollbar-tema">
                       {produtosVendidos.length === 0 && (
                         <div className="text-gray-500 text-sm">Nenhum produto vendido ainda.</div>
                       )}
