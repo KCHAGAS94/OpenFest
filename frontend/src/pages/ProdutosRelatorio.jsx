@@ -167,8 +167,8 @@ export default function ProdutosRelatorio() {
 
                 <div className="mt-6 overflow-x-auto overflow-y-auto max-h-144 rounded-2xl border border-white/10 bg-gray-900 scrollbar-tema" style={{ width: '100%' }}>
                   <table className="w-full border-collapse border border-white/10 text-left text-sm text-gray-200" style={{ minWidth: '1200px' }}>
-                    <thead className="bg-gray-950/70 sticky top-0 z-10">
-                      <tr>
+                    <thead className="bg-gray-950/70">
+                      <tr className="sticky top-0 z-20 bg-gray-950">
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Pedido</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Data</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Produto</th>
@@ -176,7 +176,7 @@ export default function ProdutosRelatorio() {
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Valor</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Vendedor</th>
                       </tr>
-                      <tr className="bg-gray-900/80">
+                      <tr className="sticky z-10 bg-gray-900" style={{ top: '2.75rem' }}>
                         <th className="border border-white/10 px-4 py-2">
                           <input
                             value={filtroPedido}
