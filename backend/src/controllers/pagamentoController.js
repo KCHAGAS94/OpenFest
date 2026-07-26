@@ -59,53 +59,63 @@ export async function criarPix(req, res) {
   }
 }
 
-// ─── CARTÃO (Point Tap) ────────────────────────────────
-export async function criarCobrancaCartao(req, res) {
-  const { valor, descricao, tipo } = req.body
-  const deviceId = process.env.MP_DEVICE_ID
+// ─── CARTÃO (venda feita fora do sistema, no celular via NFC) ──
+// Não cria cobrança nenhuma: só confere se existe um pagamento aprovado
+// recente (últimos N segundos) na conta Mercado Pago com o mesmo valor e tipo.
+const TOLERANCIA_VALOR = 0.01
+const JANELA_BUSCA_MS = 10_000
 
-  if (!deviceId || deviceId === 'COLE_O_ID_DO_DISPOSITIVO_AQUI') {
-    return res.status(400).json({
-      message: 'DEVICE_ID não configurado. Consulte /api/pagamento/dispositivos para obtê-lo.',
-    })
-  }
+export async function verificarPagamentoRecente(req, res) {
+  const { valor, tipo } = req.query
 
-  if (!valor || valor <= 0) {
+  const valorNumerico = Number(valor)
+  if (!valor || isNaN(valorNumerico) || valorNumerico <= 0) {
     return res.status(400).json({ message: 'O valor da transação é obrigatório e deve ser maior que zero.' })
   }
 
+  const paymentTypeId = tipo === 'credito' ? 'credit_card' : 'debit_card'
+  const beginDate = new Date(Date.now() - JANELA_BUSCA_MS).toISOString()
+  const endDate = new Date().toISOString()
+
   try {
+    const params = new URLSearchParams({
+      sort: 'date_created',
+      criteria: 'desc',
+      range: 'date_created',
+      begin_date: beginDate,
+      end_date: endDate,
+    })
+
     const resposta = await fetch(
-      `https://api.mercadopago.com/point/integration-api/devices/${deviceId}/payment-intents`,
+      `https://api.mercadopago.com/v1/payments/search?${params.toString()}`,
       {
-        method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: Number(valor),
-          description: descricao || 'Venda OpenFest',
-          payment: {
-            type: tipo === 'credito' ? 'credit_card' : 'debit_card',
-            installments: 1,
-            installments_cost: 'seller',
-          },
-        }),
       }
     )
 
     const data = await resposta.json()
 
     if (!resposta.ok) {
-      console.error('Erro MP Point:', data)
-      return res.status(resposta.status).json({ message: data.message || 'Erro ao criar cobrança.', detalhe: data })
+      console.error('Erro ao buscar pagamentos recentes:', data)
+      return res.status(resposta.status).json({ message: data.message || 'Erro ao consultar pagamentos.', detalhe: data })
     }
 
-    res.json({ id: data.id, status: 'pendente' })
+    const pagamentoEncontrado = (data.results || []).find(p =>
+      p.status === 'approved' &&
+      p.payment_type_id === paymentTypeId &&
+      Math.abs(Number(p.transaction_amount) - valorNumerico) <= TOLERANCIA_VALOR
+    )
+
+    if (!pagamentoEncontrado) {
+      return res.json({ encontrado: false })
+    }
+
+    res.json({ encontrado: true, id: pagamentoEncontrado.id, status: pagamentoEncontrado.status })
   } catch (err) {
-    console.error('Erro ao criar cobrança cartão:', err)
-    res.status(500).json({ message: 'Erro interno ao criar cobrança com cartão.', detalhe: err.message })
+    console.error('Erro ao verificar pagamento recente:', err)
+    res.status(500).json({ message: 'Erro interno ao verificar pagamento.', detalhe: err.message })
   }
 }
 

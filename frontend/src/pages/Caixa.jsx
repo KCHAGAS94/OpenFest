@@ -190,6 +190,24 @@ export default function Caixa() {
     }, 3000);
   }
 
+  // Venda de Débito/Crédito é feita fora do sistema (celular via NFC).
+  // Aqui só ficamos checando se surgiu um pagamento aprovado recente com o mesmo valor/tipo.
+  function iniciarPollingCartao(valor, tipo, tipoPagamento) {
+    if (!poolRef.current) poolRef.current = {};
+    poolRef.current.tipoPagamento = tipoPagamento;
+    poolRef.current.interval = setInterval(async () => {
+      try {
+        const params = new URLSearchParams({ valor: String(valor), tipo });
+        const res = await fetch(`/api/pagamento/cartao/verificar?${params.toString()}`);
+        const data = await res.json();
+        if (data.encontrado) {
+          clearInterval(poolRef.current.interval);
+          confirmarPagamento(tipoPagamento, true);
+        }
+      } catch {}
+    }, 3000);
+  }
+
   async function selecionarPagamento(tipo) {
     setLoadingPag(true);
     setErroPag('');
@@ -217,20 +235,10 @@ export default function Caixa() {
         return;
       }
 
-      const res = await fetch('/api/pagamento/cartao', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          valor: total,
-          descricao: 'Venda SwingSamba',
-          tipo: tipo === 'Crédito' ? 'credito' : 'debito',
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      const tipoApi = tipo === 'Crédito' ? 'credito' : 'debito';
       setEtapa('aguardando_cartao');
-      poolRef.current = { tipoPagamento: tipo, interval: null, id: data.id };
-      iniciarPolling(data.id, tipo);
+      poolRef.current = { tipoPagamento: tipo, interval: null };
+      iniciarPollingCartao(total, tipoApi, tipo);
 
     } catch (err) {
       setErroPag(err.message || 'Erro ao processar pagamento.');
@@ -372,7 +380,8 @@ export default function Caixa() {
               {etapa === 'aguardando_cartao' && (
                 <div className="text-center py-4">
                   <p className="text-4xl mb-4">📲</p>
-                  <p className="text-white font-medium mb-2">Aproxime o cartão do celular</p>
+                  <p className="text-white font-medium mb-2">Realize a cobrança de R$ {total.toFixed(2)} no celular</p>
+                  <p className="text-gray-500 text-sm mb-2">Assim que o pagamento for aprovado no Mercado Pago, a venda é confirmada automaticamente.</p>
                   <div className="flex justify-center mt-4"><div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" /></div>
                   <button onClick={fecharPagamento} className="mt-5 text-gray-600 hover:text-red-400 text-sm transition-colors">Cancelar</button>
                 </div>

@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {
   criarPix,
-  criarCobrancaCartao,
+  verificarPagamentoRecente,
   verificarStatus,
   listarDispositivos,
   debugToken,
@@ -10,7 +10,7 @@ import {
 const router = Router()
 
 router.post('/pix', criarPix)
-router.post('/cartao', criarCobrancaCartao)
+router.get('/cartao/verificar', verificarPagamentoRecente)
 router.get('/status/:id', verificarStatus)
 router.get('/dispositivos', listarDispositivos)
 router.get('/debug-token', debugToken)
