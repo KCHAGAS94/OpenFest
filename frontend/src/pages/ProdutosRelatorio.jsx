@@ -165,9 +165,9 @@ export default function ProdutosRelatorio() {
                 <h2 className="text-lg font-semibold text-white">Relatório de vendas</h2>
                 <p className="mt-2 text-sm text-gray-400">Aqui estão as últimas vendas registradas com hora, produto e vendedor.</p>
 
-                <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-gray-900" style={{ width: '100%' }}>
+                <div className="mt-6 overflow-x-auto overflow-y-auto max-h-144 rounded-2xl border border-white/10 bg-gray-900 scrollbar-tema" style={{ width: '100%' }}>
                   <table className="w-full border-collapse border border-white/10 text-left text-sm text-gray-200" style={{ minWidth: '1200px' }}>
-                    <thead className="bg-gray-950/70">
+                    <thead className="bg-gray-950/70 sticky top-0 z-10">
                       <tr>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Pedido</th>
                         <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Data</th>
