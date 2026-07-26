@@ -14,6 +14,18 @@ function salvarProdutos(produtos) {
   localStorage.setItem('openfest_produtos', JSON.stringify(produtos))
 }
 
+// Máscara monetária: digita centavos e desliza para reais (7 -> 0,07 -> 0,75 -> 7,50)
+function formatarValorDigitado(valorDigitado) {
+  const onlyNums = valorDigitado.replace(/\D/g, '')
+  const centavos = onlyNums ? parseInt(onlyNums, 10) : 0
+  return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function paraNumero(valorFormatado) {
+  if (!valorFormatado) return 0
+  return Number(valorFormatado.replace('.', '').replace(',', '.')) || 0
+}
+
 export default function Produtos() {
   const [produtos, setProdutos] = useState(carregarProdutos)
   
@@ -51,7 +63,7 @@ export default function Produtos() {
     setEditandoId(produto.id)
     setForm({
       nome: produto.nome,
-      preco: produto.preco.toString(),
+      preco: produto.preco.toFixed(2).replace('.', ','),
       estoque: produto.estoque.toString(),
       bloqueado: produto.bloqueado || false,
       tipo: produto.tipo || 'unidade',
@@ -65,7 +77,7 @@ export default function Produtos() {
 
     const dadosComuns = {
       nome: form.nome,
-      preco: parseFloat(form.preco),
+      preco: paraNumero(form.preco),
       estoque: parseInt(form.estoque),
       bloqueado: form.bloqueado,
       tipo: form.tipo,
@@ -217,21 +229,21 @@ export default function Produtos() {
 
               <div className={`grid gap-4 ${form.tipo === 'combo' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">
+                  <label className="flex items-end h-8 text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider leading-tight">
                     {form.tipo === 'combo' ? 'Preço do combo (R$)' : 'Preço (R$)'}
                   </label>
                   <input
                     required
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     value={form.preco}
-                    onChange={e => setForm({...form, preco: e.target.value})}
+                    onChange={e => setForm({...form, preco: formatarValorDigitado(e.target.value)})}
                     className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
                   />
                 </div>
                 {form.tipo === 'combo' && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Unidades no combo</label>
+                    <label className="flex items-end h-8 text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider leading-tight">Unidades no combo</label>
                     <input
                       required
                       type="number"
@@ -245,7 +257,7 @@ export default function Produtos() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Estoque</label>
+                  <label className="flex items-end h-8 text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider leading-tight">Estoque</label>
                   <input
                     required
                     type="number"
@@ -258,7 +270,7 @@ export default function Produtos() {
 
               {form.tipo === 'combo' && form.preco && form.unidadesCombo > 0 && (
                 <p className="text-xs text-gray-400 -mt-2">
-                  Valor impresso por unidade: <span className="text-pink-400 font-semibold">R$ {(parseFloat(form.preco) / parseInt(form.unidadesCombo)).toFixed(2).replace('.', ',')}</span>
+                  Valor impresso por unidade: <span className="text-pink-400 font-semibold">R$ {(paraNumero(form.preco) / parseInt(form.unidadesCombo)).toFixed(2).replace('.', ',')}</span>
                 </p>
               )}
 
