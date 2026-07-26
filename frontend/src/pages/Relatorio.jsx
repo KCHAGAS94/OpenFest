@@ -108,8 +108,8 @@ export default function Relatorio() {
                       <div className="space-y-5">
                         <div>
                           <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
-                            <span>Dinheiro</span>
-                            <span>{estatisticasPagamento.porcentagens.Dinheiro.toFixed(0)}</span>
+                            <span className="font-semibold text-blue-400">Dinheiro</span>
+                            <span className="font-bold text-blue-400">R$ {estatisticasPagamento.pagamentos.Dinheiro.toFixed(2).replace('.', ',')} ({estatisticasPagamento.porcentagens.Dinheiro.toFixed(1).replace('.', ',')}%)</span>
                           </div>
                           <div className="h-10 rounded-full bg-white/5">
                             <div className="h-full rounded-full bg-blue-500" style={{ width: `${estatisticasPagamento.porcentagens.Dinheiro}%` }} />
@@ -118,8 +118,8 @@ export default function Relatorio() {
 
                         <div>
                           <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
-                            <span>Pix</span>
-                            <span>{estatisticasPagamento.porcentagens.Pix.toFixed(0)}</span>
+                            <span className="font-semibold text-purple-400">Pix</span>
+                            <span className="font-bold text-purple-400">R$ {estatisticasPagamento.pagamentos.Pix.toFixed(2).replace('.', ',')} ({estatisticasPagamento.porcentagens.Pix.toFixed(1).replace('.', ',')}%)</span>
                           </div>
                           <div className="h-10 rounded-full bg-white/5">
                             <div className="h-full rounded-full bg-purple-500" style={{ width: `${estatisticasPagamento.porcentagens.Pix}%` }} />
@@ -128,8 +128,8 @@ export default function Relatorio() {
 
                         <div>
                           <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
-                            <span>Débito</span>
-                            <span>{estatisticasPagamento.porcentagens.Debito.toFixed(0)}</span>
+                            <span className="font-semibold text-amber-400">Débito</span>
+                            <span className="font-bold text-amber-400">R$ {estatisticasPagamento.pagamentos.Debito.toFixed(2).replace('.', ',')} ({estatisticasPagamento.porcentagens.Debito.toFixed(1).replace('.', ',')}%)</span>
                           </div>
                           <div className="h-10 rounded-full bg-white/5">
                             <div className="h-full rounded-full bg-amber-500" style={{ width: `${estatisticasPagamento.porcentagens.Debito}%` }} />
@@ -138,8 +138,8 @@ export default function Relatorio() {
 
                         <div>
                           <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
-                            <span>Crédito</span>
-                            <span>{estatisticasPagamento.porcentagens.Credito.toFixed(0)}</span>
+                            <span className="font-semibold text-yellow-300">Crédito</span>
+                            <span className="font-bold text-yellow-300">R$ {estatisticasPagamento.pagamentos.Credito.toFixed(2).replace('.', ',')} ({estatisticasPagamento.porcentagens.Credito.toFixed(1).replace('.', ',')}%)</span>
                           </div>
                           <div className="h-10 rounded-full bg-white/5">
                             <div className="h-full rounded-full bg-yellow-400" style={{ width: `${estatisticasPagamento.porcentagens.Credito}%` }} />
