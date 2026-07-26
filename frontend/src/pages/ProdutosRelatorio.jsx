@@ -102,7 +102,7 @@ export default function ProdutosRelatorio() {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 py-10">
-        <section className="rounded-3xl bg-gray-900/80 border border-white/10 p-8 shadow-xl shadow-black/20">
+        <section className="rounded-3xl bg-gray-900/80 border border-white/10 p-8 shadow-xl shadow-black/20 overflow-hidden">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Gestão</p>
@@ -121,9 +121,9 @@ export default function ProdutosRelatorio() {
             {/* Campo de pesquisa removido */}
           </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[1.7fr_0.65fr]">
-            <div className="space-y-6">
-              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
+          <div className="mt-10 grid gap-6">
+            <div className="space-y-6 min-w-0">
+              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6 overflow-hidden">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className="mt-2 text-xl font-semibold text-white">Resumo de produtos</h2>
@@ -131,7 +131,7 @@ export default function ProdutosRelatorio() {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-3xl bg-gray-900 p-6">
+                <div className="mt-6 rounded-3xl bg-gray-900 p-6 overflow-hidden">
                   <div className="space-y-5">
                     <div>
                       <p className="text-sm text-gray-400">Gráfico de produtos vendidos</p>
@@ -161,20 +161,21 @@ export default function ProdutosRelatorio() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6">
+              <div className="rounded-3xl border border-white/10 bg-gray-950/70 p-6 overflow-hidden">
                 <h2 className="text-lg font-semibold text-white">Relatório de vendas</h2>
                 <p className="mt-2 text-sm text-gray-400">Aqui estão as últimas vendas registradas com hora, produto e vendedor.</p>
 
-                <div className="mt-6 overflow-x-auto overflow-y-auto max-h-144 rounded-2xl border border-white/10 bg-gray-900 scrollbar-tema" style={{ width: '100%' }}>
-                  <table className="w-full border-collapse border border-white/10 text-left text-sm text-gray-200" style={{ minWidth: '1200px' }}>
+                <div className="mt-6 rounded-2xl border border-white/10 bg-gray-900 overflow-hidden">
+                <div className="overflow-x-auto overflow-y-auto max-h-144 pr-4 scrollbar-tema" style={{ width: '100%' }}>
+                  <table className="w-full border-collapse border border-white/10 text-left text-sm text-gray-200" style={{ tableLayout: 'fixed' }}>
                     <thead className="bg-gray-950/70">
                       <tr className="sticky top-0 z-20 bg-gray-950">
-                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Pedido</th>
-                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Data</th>
-                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Produto</th>
-                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Quantidade</th>
-                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Valor</th>
-                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap">Vendedor</th>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap w-24">Pedido</th>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap w-48">Data</th>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap w-64">Produto</th>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap w-28">Quantidade</th>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap w-28">Valor</th>
+                        <th className="border border-white/10 px-4 py-3 font-medium whitespace-nowrap w-32">Vendedor</th>
                       </tr>
                       <tr className="sticky z-10 bg-gray-900" style={{ top: '2.75rem' }}>
                         <th className="border border-white/10 px-4 py-2">
@@ -239,15 +240,16 @@ export default function ProdutosRelatorio() {
                           <tr key={`${venda.data}-${index}`}>
                             <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.idPedido}</td>
                             <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.data}</td>
-                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.produto}</td>
+                            <td className="border border-white/10 px-4 py-3 wrap-break-word">{venda.produto}</td>
                             <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.quantidade}</td>
                             <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.valor}</td>
-                            <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.vendedor}</td>
+                            <td className="border border-white/10 px-4 py-3 wrap-break-word">{venda.vendedor}</td>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </table>
+                </div>
                 </div>
               </div>
             </div>
