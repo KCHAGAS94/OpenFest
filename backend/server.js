@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import authRoutes from './src/routes/auth.js'
 import pagamentoRoutes from './src/routes/pagamento.js'
 import produtosRoutes from './src/routes/produtos.js'
+import usuariosRoutes from './src/routes/usuarios.js'
 import { printReceipt } from './src/printTest.js' // Movi o import para o topo
 
 dotenv.config({ override: true })
@@ -20,6 +21,7 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/pagamento', pagamentoRoutes)
 app.use('/api/produtos', produtosRoutes)
+app.use('/api/usuarios', usuariosRoutes)
 
 // Endpoint de impressão (Agora o 'app' já existe aqui)
 app.post('/api/print', async (req, res) => {

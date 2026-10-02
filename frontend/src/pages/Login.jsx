@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { primeiraRotaPermitida } from '../utils/permissoes'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -26,7 +27,8 @@ export default function Login() {
         setError(data.message || 'Erro ao fazer login.')
       } else {
         localStorage.setItem('token', data.token)
-        window.location.href = '/dashboard'
+        localStorage.setItem('user', JSON.stringify(data.user))
+        window.location.href = primeiraRotaPermitida(data.user?.permissoes)
       }
     } catch {
       setError('Não foi possível conectar ao servidor.')

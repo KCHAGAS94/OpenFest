@@ -11,7 +11,7 @@ export async function login(req, res) {
 
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
+      'SELECT * FROM usuarios WHERE email = $1',
       [email]
     )
 
@@ -21,19 +21,26 @@ export async function login(req, res) {
       return res.status(401).json({ message: 'Credenciais inválidas.' })
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash)
+    const valid = await bcrypt.compare(password, user.senha)
 
     if (!valid) {
       return res.status(401).json({ message: 'Credenciais inválidas.' })
     }
 
+    const permissoes = {
+      caixa: user.permCaixa,
+      produtos: user.permProdutos,
+      gestao: user.permGestao,
+      configuracoes: user.permConfiguracoes,
+    }
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, permissoes },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     )
 
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } })
+    res.json({ token, user: { id: user.id, name: user.nome, email: user.email, permissoes } })
   } catch (err) {
     console.error('Erro no login:', err)
     res.status(500).json({ message: 'Erro interno do servidor.' })

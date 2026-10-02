@@ -6,6 +6,8 @@ import ProdutosRelatorio from './pages/ProdutosRelatorio'
 import Gestao from './pages/Gestao'
 import Relatorio from './pages/Relatorio'
 import Funcionarios from './pages/Funcionarios'
+import SemAcesso from './pages/SemAcesso'
+import Configuracoes from './pages/Configuracoes'
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
       <Route path="/gestao" element={<Gestao />} />
       <Route path="/relatorio" element={<Relatorio />} />
       <Route path="/funcionarios" element={<Funcionarios />} />
+      <Route path="/sem-acesso" element={<SemAcesso />} />
+      <Route path="/configuracoes" element={<Configuracoes />} />
     </Routes>
   )
 }
