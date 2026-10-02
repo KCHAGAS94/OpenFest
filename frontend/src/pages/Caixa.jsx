@@ -15,13 +15,27 @@ import Navbar from '../components/Navbar'
 import ReciboImpressao from '../components/ReciboImpressao'
 import '../print.css';
 
-function carregarProdutos() {
+async function carregarProdutos() {
   try {
-    const produtos = JSON.parse(localStorage.getItem('openfest_produtos')) || [];
+    const res = await fetch('/api/produtos');
+    const produtos = await res.json();
+    if (!res.ok) throw new Error(produtos.error);
     // Garante que preco é sempre número
     return produtos.map(p => ({ ...p, preco: Number(p.preco) || 0 }));
   } catch {
     return [];
+  }
+}
+
+async function atualizarProdutoBackend(produto) {
+  try {
+    await fetch(`/api/produtos/${produto.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(produto),
+    });
+  } catch {
+    // Falha ao sincronizar estoque não deve travar a venda já confirmada.
   }
 }
 
@@ -44,7 +58,7 @@ function carregarVendas() {
 export default function Caixa() {
   const [mostrarRecibo, setMostrarRecibo] = useState(false);
   const [reciboInfo, setReciboInfo] = useState({});
-  const [produtos, setProdutos] = useState(carregarProdutos)
+  const [produtos, setProdutos] = useState([])
   const [carrinho, setCarrinho] = useState([])
   const [carrinhoAberto, setCarrinhoAberto] = useState(false)
 
@@ -57,7 +71,8 @@ export default function Caixa() {
   const poolRef = useRef(null)
 
   useEffect(() => {
-    function onFocus() { setProdutos(carregarProdutos()) }
+    carregarProdutos().then(setProdutos)
+    function onFocus() { carregarProdutos().then(setProdutos) }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [])
@@ -128,20 +143,22 @@ export default function Caixa() {
       const vendasAtuais = carregarVendas();
       salvarVendas([...vendasAtuais, venda]);
 
-      // Atualizar estoque e bloquear produtos se necessário
+      // Atualizar estoque e bloquear produtos se necessário (persistindo no banco)
       const produtosAtualizados = produtos.map(produto => {
         const itemCarrinho = carrinho.find(item => item.id === produto.id);
         if (itemCarrinho) {
           const novoEstoque = (produto.estoque || 0) - itemCarrinho.quantidade;
           return {
             ...produto,
-            estoque: novoEstoque,
+            estoque: Math.max(0, novoEstoque),
             bloqueado: novoEstoque <= 0 ? true : produto.bloqueado
           };
         }
         return produto;
       });
-      localStorage.setItem('openfest_produtos', JSON.stringify(produtosAtualizados));
+      produtosAtualizados
+        .filter(produto => carrinho.some(item => item.id === produto.id))
+        .forEach(atualizarProdutoBackend);
       setProdutos(produtosAtualizados);
 
       // Montar dados do recibo para impressão

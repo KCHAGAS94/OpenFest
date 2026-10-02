@@ -9,4 +9,8 @@ router.post('/', produtosController.cadastrarProduto);
 // Rota para listar produtos
 router.get('/', produtosController.listarProdutos);
 
+// Rotas para editar e remover produto
+router.put('/:id', produtosController.atualizarProduto);
+router.delete('/:id', produtosController.deletarProduto);
+
 export default router;

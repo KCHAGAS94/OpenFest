@@ -1,19 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 
-// Funções de Persistência
-function carregarProdutos() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_produtos')) || []
-  } catch {
-    return []
-  }
-}
-
-function salvarProdutos(produtos) {
-  localStorage.setItem('openfest_produtos', JSON.stringify(produtos))
-}
-
 // Máscara monetária: digita centavos e desliza para reais (7 -> 0,07 -> 0,75 -> 7,50)
 function formatarValorDigitado(valorDigitado) {
   const onlyNums = valorDigitado.replace(/\D/g, '')
@@ -27,16 +14,18 @@ function paraNumero(valorFormatado) {
 }
 
 export default function Produtos() {
-  const [produtos, setProdutos] = useState(carregarProdutos)
-  
+  const [produtos, setProdutos] = useState([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState('')
+
   // Estados dos Modais
   const [modalAberto, setModalAberto] = useState(false)
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false)
-  
+
   // Estados de Controle
   const [editandoId, setEditandoId] = useState(null)
   const [produtoParaExcluir, setProdutoParaExcluir] = useState(null)
-  
+
   const [form, setForm] = useState({
     nome: '',
     preco: '',
@@ -46,10 +35,24 @@ export default function Produtos() {
     unidadesCombo: ''
   })
 
-  // Sincroniza com localStorage sempre que a lista mudar
   useEffect(() => {
-    salvarProdutos(produtos)
-  }, [produtos])
+    carregarProdutos()
+  }, [])
+
+  async function carregarProdutos() {
+    setCarregando(true)
+    setErro('')
+    try {
+      const res = await fetch('/api/produtos')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setProdutos(data.map(p => ({ ...p, preco: Number(p.preco) })))
+    } catch (err) {
+      setErro('Não foi possível carregar os produtos.')
+    } finally {
+      setCarregando(false)
+    }
+  }
 
   // --- Funções de Ação ---
 
@@ -72,31 +75,33 @@ export default function Produtos() {
     setModalAberto(true)
   }
 
-  function handleSalvar(e) {
+  async function handleSalvar(e) {
     e.preventDefault()
 
-    const dadosComuns = {
+    const payload = {
       nome: form.nome,
       preco: paraNumero(form.preco),
       estoque: parseInt(form.estoque),
       bloqueado: form.bloqueado,
       tipo: form.tipo,
-      unidadesCombo: form.tipo === 'combo' ? parseInt(form.unidadesCombo) || 1 : undefined
+      unidadesCombo: form.tipo === 'combo' ? parseInt(form.unidadesCombo) || 1 : null
     }
 
-    if (editandoId) {
-      const novosProdutos = produtos.map(p => {
-        if (p.id === editandoId) {
-          return { ...p, ...dadosComuns }
-        }
-        return p
+    try {
+      const url = editandoId ? `/api/produtos/${editandoId}` : '/api/produtos'
+      const method = editandoId ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       })
-      setProdutos(novosProdutos)
-    } else {
-      const novoProduto = { id: Date.now(), ...dadosComuns }
-      setProdutos([...produtos, novoProduto])
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setModalAberto(false)
+      carregarProdutos()
+    } catch (err) {
+      setErro('Não foi possível salvar o produto.')
     }
-    setModalAberto(false)
   }
 
   // --- Funções de Exclusão Customizada ---
@@ -106,33 +111,46 @@ export default function Produtos() {
     setModalExcluirAberto(true)
   }
 
-  function confirmarExclusao() {
-    if (produtoParaExcluir) {
-      const novaLista = produtos.filter(p => p.id !== produtoParaExcluir.id)
-      setProdutos(novaLista)
+  async function confirmarExclusao() {
+    if (!produtoParaExcluir) return
+    try {
+      const res = await fetch(`/api/produtos/${produtoParaExcluir.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
       setModalExcluirAberto(false)
       setProdutoParaExcluir(null)
+      carregarProdutos()
+    } catch (err) {
+      setErro(err.message || 'Não foi possível excluir o produto.')
     }
   }
 
-  function alternarBloqueio(id) {
-    const novaLista = produtos.map(p => 
-      p.id === id ? { ...p, bloqueado: !p.bloqueado } : p
-    )
-    setProdutos(novaLista)
+  async function alternarBloqueio(produto) {
+    try {
+      const res = await fetch(`/api/produtos/${produto.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...produto, bloqueado: !produto.bloqueado }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      carregarProdutos()
+    } catch (err) {
+      setErro('Não foi possível atualizar o bloqueio do produto.')
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
-      
+
       <main className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-100">Gestão de Produtos</h1>
             <p className="text-gray-400 text-sm">Cadastre e gerencie os itens do evento</p>
           </div>
-          <button 
+          <button
             onClick={abrirModalCadastro}
             className="bg-pink-500 hover:bg-pink-600 px-6 py-2 rounded-xl font-semibold transition-all shadow-lg shadow-pink-900/20 active:scale-95"
           >
@@ -140,6 +158,15 @@ export default function Produtos() {
           </button>
         </div>
 
+        {!!erro && (
+          <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2 mb-4">
+            {erro}
+          </p>
+        )}
+
+        {carregando ? (
+          <p className="text-gray-400">Carregando...</p>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {produtos.map(produto => (
             <div key={produto.id} className="bg-gray-900 border border-white/10 rounded-2xl p-5 hover:border-pink-500/30 transition-all group">
@@ -157,20 +184,20 @@ export default function Produtos() {
                 </span>
               </div>
               <div className="flex gap-2 mt-4">
-                <button 
+                <button
                   onClick={() => abrirModalEdicao(produto)}
                   className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors font-medium"
                 >
                   Editar
                 </button>
-                <button 
-                  onClick={() => alternarBloqueio(produto.id)}
+                <button
+                  onClick={() => alternarBloqueio(produto)}
                   className={`px-3 py-2 rounded-lg text-sm transition-colors ${produto.bloqueado ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' : 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20'}`}
                   title={produto.bloqueado ? "Desbloquear no Caixa" : "Bloquear no Caixa"}
                 >
                   {produto.bloqueado ? '🔓' : '🚫'}
                 </button>
-                <button 
+                <button
                   onClick={() => prepararExclusao(produto)}
                   className="px-3 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm transition-colors"
                 >
@@ -180,13 +207,14 @@ export default function Produtos() {
             </div>
           ))}
         </div>
+        )}
       </main>
 
       {/* MODAL DE CADASTRO / EDIÇÃO */}
       {modalAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="absolute inset-0 bg-black/60" onClick={() => setModalAberto(false)} />
-          <form 
+          <form
             onSubmit={handleSalvar}
             className="relative bg-gray-900 border border-white/10 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in zoom-in duration-200"
           >
@@ -197,7 +225,7 @@ export default function Produtos() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Nome do Produto</label>
-                <input 
+                <input
                   required
                   type="text"
                   value={form.nome}
@@ -275,7 +303,7 @@ export default function Produtos() {
               )}
 
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
-                <input 
+                <input
                   type="checkbox"
                   id="bloqueado"
                   checked={form.bloqueado}
@@ -289,14 +317,14 @@ export default function Produtos() {
             </div>
 
             <div className="flex gap-3 mt-8">
-              <button 
+              <button
                 type="button"
                 onClick={() => setModalAberto(false)}
                 className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-colors"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 type="submit"
                 className="flex-1 py-3 bg-pink-500 hover:bg-pink-600 rounded-xl font-semibold transition-all active:scale-95"
               >
@@ -323,13 +351,13 @@ export default function Produtos() {
               </p>
 
               <div className="flex w-full gap-3">
-                <button 
+                <button
                   onClick={() => setModalExcluirAberto(false)}
                   className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-colors text-sm"
                 >
                   Manter
                 </button>
-                <button 
+                <button
                   onClick={confirmarExclusao}
                   className="flex-1 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-semibold transition-all text-sm active:scale-95 shadow-lg shadow-red-900/20"
                 >

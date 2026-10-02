@@ -15,7 +15,8 @@
       "PowerShell($env:PGPASSWORD=\"014510\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -h localhost -d openfest -c \"UPDATE usuarios SET `\"permConfiguracoes`\" = true WHERE email = 'gerente@teste.com' RETURNING email, `\"permConfiguracoes`\";\")",
       "Bash(cat)",
       "Read(//tmp/**)",
-      "PowerShell($env:PGPASSWORD=\"014510\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -h localhost -d openfest -f \"C:\\\\Users\\\\Roger\\\\AppData\\\\Local\\\\Temp\\\\grant_config.sql\")"
+      "PowerShell($env:PGPASSWORD=\"014510\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -h localhost -d openfest -f \"C:\\\\Users\\\\Roger\\\\AppData\\\\Local\\\\Temp\\\\grant_config.sql\")",
+      "PowerShell($env:PGPASSWORD=\"014510\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -h localhost -d openfest -f \"C:\\\\Users\\\\Roger\\\\AppData\\\\Local\\\\Temp\\\\alter_produtos.sql\")"
     ]
   }
 }

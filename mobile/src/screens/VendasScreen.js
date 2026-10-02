@@ -15,10 +15,26 @@ import { useAuth } from '../context/AuthContext';
 
 const EVENTO = 'SwingSamba';
 
+// Mesma paleta do frontend (Tailwind): gray-950/900/800, pink-500/400.
+const CORES = {
+  bg: '#030712',
+  header: '#000000',
+  card: '#111827',
+  cardBorder: 'rgba(255,255,255,0.1)',
+  pink: '#ec4899',
+  pinkDark: '#db2777',
+  pinkLight: '#f472b6',
+  textoMuted: '#9ca3af',
+  textoMutedForte: '#6b7280',
+  erro: '#f87171',
+  sucesso: '#22c55e',
+};
+
 export default function VendasScreen() {
   const { user, logout } = useAuth();
   const [produtos, setProdutos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [etapa, setEtapa] = useState('idle'); // idle | escolha | aguardando_pix | aguardando_cartao | confirmado
   const [pixData, setPixData] = useState(null);
   const [erro, setErro] = useState('');
@@ -40,6 +56,7 @@ export default function VendasScreen() {
   }
 
   const total = carrinho.reduce((acc, item) => acc + item.preco * item.quantidade, 0);
+  const totalItens = carrinho.reduce((acc, item) => acc + item.quantidade, 0);
 
   function adicionarItem(produto) {
     setCarrinho((prev) => {
@@ -153,6 +170,7 @@ export default function VendasScreen() {
 
   function concluirVenda() {
     setCarrinho([]);
+    setCarrinhoAberto(false);
     fecharPagamento();
     carregarProdutos();
   }
@@ -160,56 +178,112 @@ export default function VendasScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>OpenFest · {user?.name}</Text>
-        <Pressable onPress={logout}>
-          <Text style={styles.headerLogout}>Sair</Text>
-        </Pressable>
-      </View>
-
-      {!!erro && etapa === 'idle' && <Text style={styles.errorBanner}>{erro}</Text>}
-
-      <FlatList
-        data={produtos}
-        keyExtractor={(item) => String(item.id)}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
-        columnWrapperStyle={{ gap: 10 }}
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => adicionarItem(item)}>
-            <Text style={styles.cardNome}>{item.nome}</Text>
-            <Text style={styles.cardPreco}>R$ {Number(item.preco).toFixed(2)}</Text>
-            <Text style={styles.cardEstoque}>Estoque: {item.estoque ?? '-'}</Text>
-          </Pressable>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>Nenhum produto disponível.</Text>}
-      />
-
-      {carrinho.length > 0 && (
-        <View style={styles.cartBar}>
-          <View style={{ flex: 1 }}>
-            {carrinho.map((item) => (
-              <View key={item.id} style={styles.cartItem}>
-                <Text style={styles.cartItemNome} numberOfLines={1}>
-                  {item.quantidade}x {item.nome}
-                </Text>
-                <Pressable onPress={() => removerItem(item.id)}>
-                  <Text style={styles.cartItemRemover}>−</Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
-          <Pressable style={styles.finalizarBtn} onPress={() => setEtapa('escolha')}>
-            <Text style={styles.finalizarBtnText}>Finalizar{'\n'}R$ {total.toFixed(2)}</Text>
+        <Text style={styles.headerLogo}>
+          Open<Text style={{ color: CORES.pinkLight }}>Fest</Text>
+        </Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.headerUsuario}>{user?.name}</Text>
+          <Pressable onPress={logout}>
+            <Text style={styles.headerLogout}>Sair</Text>
           </Pressable>
         </View>
+      </View>
+
+      <View style={styles.conteudo}>
+        <Text style={styles.sectionTitle}>Produtos disponíveis</Text>
+
+        {!!erro && etapa === 'idle' && <Text style={styles.errorBanner}>{erro}</Text>}
+
+        <FlatList
+          data={produtos}
+          keyExtractor={(item) => String(item.id)}
+          numColumns={2}
+          contentContainerStyle={{ paddingBottom: carrinho.length > 0 ? 100 : 24 }}
+          columnWrapperStyle={{ gap: 12 }}
+          renderItem={({ item }) => (
+            <Pressable style={styles.card} onPress={() => adicionarItem(item)}>
+              <Text style={styles.cardNome}>{item.nome}</Text>
+              <Text style={styles.cardPreco}>R$ {Number(item.preco).toFixed(2)}</Text>
+              <Text style={styles.cardEstoque}>Estoque: {item.estoque ?? '-'}</Text>
+            </Pressable>
+          )}
+          ListEmptyComponent={<Text style={styles.empty}>Nenhum produto disponível.</Text>}
+        />
+      </View>
+
+      {carrinho.length > 0 && (
+        <Pressable style={styles.cartFab} onPress={() => setCarrinhoAberto(true)}>
+          <Text style={styles.cartFabEmoji}>🛒</Text>
+          <View style={styles.cartFabBadge}>
+            <Text style={styles.cartFabBadgeText}>{totalItens}</Text>
+          </View>
+          <Text style={styles.cartFabTotal}>R$ {total.toFixed(2)}</Text>
+        </Pressable>
       )}
 
+      {/* ─── Bottom sheet do carrinho ─── */}
+      <Modal visible={carrinhoAberto} transparent animationType="slide">
+        <Pressable style={styles.sheetOverlay} onPress={() => setCarrinhoAberto(false)} />
+        <View style={styles.sheet}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.modalTitle}>Pedido atual</Text>
+            <Pressable onPress={() => setCarrinhoAberto(false)}>
+              <Text style={styles.fechar}>×</Text>
+            </Pressable>
+          </View>
+
+          <FlatList
+            data={carrinho}
+            keyExtractor={(item) => String(item.id)}
+            style={{ maxHeight: 280 }}
+            ListEmptyComponent={<Text style={styles.empty}>Nenhum item adicionado.</Text>}
+            renderItem={({ item }) => (
+              <View style={styles.cartItem}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cartItemNome}>{item.nome}</Text>
+                  <Text style={styles.cartItemPreco}>
+                    R$ {item.preco.toFixed(2)} × {item.quantidade}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Pressable style={styles.qtdBtn} onPress={() => removerItem(item.id)}>
+                    <Text style={styles.qtdBtnText}>−</Text>
+                  </Pressable>
+                  <Text style={{ color: '#fff', width: 16, textAlign: 'center' }}>{item.quantidade}</Text>
+                  <Pressable style={[styles.qtdBtn, { backgroundColor: 'rgba(34,197,94,0.15)' }]} onPress={() => adicionarItem(item)}>
+                    <Text style={styles.qtdBtnText}>+</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+          />
+
+          <View style={styles.sheetFooter}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+              <Text style={{ color: CORES.textoMuted }}>Total</Text>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 20 }}>R$ {total.toFixed(2)}</Text>
+            </View>
+            <Pressable
+              style={[styles.finalizarBtn, carrinho.length === 0 && { opacity: 0.4 }]}
+              disabled={carrinho.length === 0}
+              onPress={() => {
+                setCarrinhoAberto(false);
+                setEtapa('escolha');
+              }}
+            >
+              <Text style={styles.finalizarBtnText}>Finalizar Venda</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ─── Modal de pagamento ─── */}
       <Modal visible={etapa !== 'idle'} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             {etapa === 'escolha' && (
               <>
-                <Text style={styles.modalTitle}>Forma de pagamento</Text>
+                <Text style={styles.modalTitle}>Forma de Pagamento</Text>
                 <Text style={styles.modalTotal}>Total: R$ {total.toFixed(2)}</Text>
                 {!!erro && <Text style={styles.errorBanner}>{erro}</Text>}
                 <View style={styles.pagamentoGrid}>
@@ -232,12 +306,12 @@ export default function VendasScreen() {
 
             {etapa === 'aguardando_cartao' && (
               <>
-                <Text style={styles.modalTitle}>Aguardando cartão</Text>
+                <Text style={styles.modalTitle}>Aguardando Cartão</Text>
                 <Text style={styles.modalInfo}>
-                  Realize a cobrança de R$ {total.toFixed(2)} na maquininha/celular do Mercado Pago.
-                  Assim que aprovar, a venda confirma automaticamente.
+                  Realize a cobrança de R$ {total.toFixed(2)} no celular/maquininha do Mercado Pago. Assim que
+                  aprovar, a venda confirma automaticamente.
                 </Text>
-                <ActivityIndicator size="large" color="#ec4899" style={{ marginVertical: 16 }} />
+                <ActivityIndicator size="large" color={CORES.pink} style={{ marginVertical: 16 }} />
                 <Pressable onPress={fecharPagamento}>
                   <Text style={styles.cancelar}>Cancelar</Text>
                 </Pressable>
@@ -246,7 +320,7 @@ export default function VendasScreen() {
 
             {etapa === 'aguardando_pix' && pixData && (
               <>
-                <Text style={styles.modalTitle}>Pague via Pix</Text>
+                <Text style={styles.modalTitle}>Pague via PIX</Text>
                 <Image
                   source={{ uri: `data:image/png;base64,${pixData.qr_code_base64}` }}
                   style={styles.qrCode}
@@ -257,7 +331,7 @@ export default function VendasScreen() {
                 >
                   <Text style={styles.copiarBtnText}>Copiar código Pix</Text>
                 </Pressable>
-                <ActivityIndicator size="small" color="#ec4899" style={{ marginVertical: 12 }} />
+                <ActivityIndicator size="small" color={CORES.pink} style={{ marginVertical: 12 }} />
                 <Pressable onPress={fecharPagamento}>
                   <Text style={styles.cancelar}>Cancelar</Text>
                 </Pressable>
@@ -266,7 +340,7 @@ export default function VendasScreen() {
 
             {etapa === 'confirmado' && (
               <>
-                <Text style={styles.modalTitle}>✅ Pagamento confirmado</Text>
+                <Text style={styles.modalTitle}>✅ Pagamento Confirmado</Text>
                 <Text style={styles.modalInfo}>Cupom enviado para impressão no PC.</Text>
                 <Pressable style={styles.finalizarBtn} onPress={concluirVenda}>
                   <Text style={styles.finalizarBtnText}>Nova venda</Text>
@@ -281,56 +355,124 @@ export default function VendasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
+  container: { flex: 1, backgroundColor: CORES.bg },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
+    backgroundColor: CORES.header,
+    borderBottomWidth: 1,
+    borderBottomColor: CORES.cardBorder,
+    paddingHorizontal: 20,
+    paddingTop: 54,
+    paddingBottom: 16,
   },
-  headerTitle: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  headerLogout: { color: '#f87171' },
+  headerLogo: { color: '#fff', fontWeight: 'bold', fontSize: 20, letterSpacing: -0.5 },
+  headerUsuario: { color: '#fff', fontSize: 13, fontWeight: '500' },
+  headerLogout: { color: CORES.textoMuted, fontSize: 12, marginTop: 2 },
+  conteudo: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+  sectionTitle: { color: '#e5e7eb', fontSize: 16, fontWeight: '600', marginBottom: 12 },
   errorBanner: {
     color: '#fecaca',
-    backgroundColor: 'rgba(248,113,113,0.15)',
+    backgroundColor: 'rgba(248,113,113,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.2)',
     padding: 10,
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginBottom: 8,
+    borderRadius: 10,
+    marginBottom: 12,
   },
-  grid: { padding: 16, gap: 10 },
-  empty: { color: '#64748b', textAlign: 'center', marginTop: 40 },
+  empty: { color: CORES.textoMutedForte, textAlign: 'center', marginTop: 24 },
   card: {
     flex: 1,
-    backgroundColor: '#1e293b',
+    backgroundColor: CORES.card,
+    borderWidth: 1,
+    borderColor: CORES.cardBorder,
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    padding: 16,
+    marginBottom: 12,
   },
-  cardNome: { color: '#fff', fontWeight: '500' },
-  cardPreco: { color: '#ec4899', fontWeight: 'bold', marginTop: 6 },
-  cardEstoque: { color: '#94a3b8', fontSize: 12, marginTop: 4 },
-  cartBar: {
+  cardNome: { color: '#fff', fontWeight: '500', fontSize: 14, lineHeight: 18 },
+  cardPreco: { color: CORES.pinkLight, fontWeight: 'bold', marginTop: 8 },
+  cardEstoque: { color: CORES.textoMuted, fontSize: 12, marginTop: 4 },
+  cartFab: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    padding: 14,
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    backgroundColor: CORES.pink,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  cartItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
-  cartItemNome: { color: '#e2e8f0', fontSize: 13, flex: 1 },
-  cartItemRemover: { color: '#f87171', fontSize: 18, paddingHorizontal: 8 },
-  finalizarBtn: { backgroundColor: '#ec4899', borderRadius: 10, padding: 12 },
-  finalizarBtnText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
+  cartFabEmoji: { fontSize: 18 },
+  cartFabBadge: {
+    backgroundColor: '#fff',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartFabBadgeText: { color: CORES.pinkDark, fontSize: 11, fontWeight: 'bold' },
+  cartFabTotal: { color: '#fff', fontWeight: '600' },
+  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: {
+    backgroundColor: CORES.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderColor: CORES.cardBorder,
+    padding: 20,
+    maxHeight: '75%',
+  },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sheetFooter: { borderTopWidth: 1, borderTopColor: CORES.cardBorder, paddingTop: 16, marginTop: 10 },
+  fechar: { color: CORES.textoMuted, fontSize: 24, lineHeight: 24 },
+  cartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  cartItemNome: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  cartItemPreco: { color: CORES.textoMuted, fontSize: 12, marginTop: 2 },
+  qtdBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtdBtnText: { color: '#fff', fontWeight: 'bold' },
+  finalizarBtn: { backgroundColor: CORES.pink, borderRadius: 12, paddingVertical: 14 },
+  finalizarBtnText: { color: '#fff', fontWeight: '600', textAlign: 'center', fontSize: 15 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 24 },
-  modalBox: { backgroundColor: '#111827', borderRadius: 16, padding: 20 },
-  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8, textAlign: 'center' },
-  modalTotal: { color: '#ec4899', fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
-  modalInfo: { color: '#94a3b8', textAlign: 'center', marginBottom: 8 },
+  modalBox: {
+    backgroundColor: CORES.card,
+    borderWidth: 1,
+    borderColor: CORES.cardBorder,
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '600', textAlign: 'center' },
+  modalTotal: { color: CORES.pinkLight, fontWeight: 'bold', textAlign: 'center', marginTop: 8, marginBottom: 16 },
+  modalInfo: { color: CORES.textoMuted, textAlign: 'center', marginTop: 8, marginBottom: 8 },
   pagamentoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   pagamentoBtn: {
-    backgroundColor: '#1e293b',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: CORES.cardBorder,
     borderRadius: 12,
     paddingVertical: 18,
     paddingHorizontal: 24,
@@ -338,8 +480,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pagamentoBtnText: { color: '#fff', fontWeight: '500' },
-  cancelar: { color: '#64748b', textAlign: 'center', marginTop: 16 },
-  qrCode: { width: 220, height: 220, alignSelf: 'center', backgroundColor: '#fff', borderRadius: 12 },
-  copiarBtn: { backgroundColor: '#1e293b', borderRadius: 10, padding: 10, marginTop: 12 },
-  copiarBtnText: { color: '#e2e8f0', textAlign: 'center', fontSize: 12 },
+  cancelar: { color: CORES.textoMutedForte, textAlign: 'center', marginTop: 18 },
+  qrCode: { width: 220, height: 220, alignSelf: 'center', backgroundColor: '#fff', borderRadius: 12, marginTop: 8 },
+  copiarBtn: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 10, marginTop: 12 },
+  copiarBtnText: { color: '#e5e7eb', textAlign: 'center', fontSize: 12 },
 });
