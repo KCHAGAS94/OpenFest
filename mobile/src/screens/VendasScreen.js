@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { api } from '../api/client';
-import { useAuth } from '../context/AuthContext';
 
 const EVENTO = 'SwingSamba';
 
@@ -31,7 +30,6 @@ const CORES = {
 };
 
 export default function VendasScreen() {
-  const { user, logout } = useAuth();
   const [produtos, setProdutos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
@@ -87,6 +85,22 @@ export default function VendasScreen() {
     setErro('');
   }
 
+  async function registrarVenda(tipoPagamento) {
+    try {
+      await api.post('/api/vendas', {
+        itens: carrinho.map((item) => ({
+          produtoId: item.id,
+          quantidade: item.quantidade,
+          precoUnit: item.preco,
+        })),
+        total,
+        tipoPagamento,
+      });
+    } catch (err) {
+      // Falha ao registrar a venda no banco não deve travar o fluxo já confirmado.
+    }
+  }
+
   async function imprimirRecibo(tipoPagamento) {
     const recibo = {
       evento: EVENTO,
@@ -109,6 +123,7 @@ export default function VendasScreen() {
 
   async function confirmarVenda(tipoPagamento) {
     clearInterval(pollRef.current);
+    await registrarVenda(tipoPagamento);
     await imprimirRecibo(tipoPagamento);
     setEtapa('confirmado');
   }
@@ -177,18 +192,6 @@ export default function VendasScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerLogo}>
-          Open<Text style={{ color: CORES.pinkLight }}>Fest</Text>
-        </Text>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.headerUsuario}>{user?.name}</Text>
-          <Pressable onPress={logout}>
-            <Text style={styles.headerLogout}>Sair</Text>
-          </Pressable>
-        </View>
-      </View>
-
       <View style={styles.conteudo}>
         <Text style={styles.sectionTitle}>Produtos disponíveis</Text>
 
@@ -356,20 +359,6 @@ export default function VendasScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: CORES.bg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: CORES.header,
-    borderBottomWidth: 1,
-    borderBottomColor: CORES.cardBorder,
-    paddingHorizontal: 20,
-    paddingTop: 54,
-    paddingBottom: 16,
-  },
-  headerLogo: { color: '#fff', fontWeight: 'bold', fontSize: 20, letterSpacing: -0.5 },
-  headerUsuario: { color: '#fff', fontSize: 13, fontWeight: '500' },
-  headerLogout: { color: CORES.textoMuted, fontSize: 12, marginTop: 2 },
   conteudo: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   sectionTitle: { color: '#e5e7eb', fontSize: 16, fontWeight: '600', marginBottom: 12 },
   errorBanner: {

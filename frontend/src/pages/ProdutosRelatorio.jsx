@@ -1,21 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Navbar from '../components/Navbar'
-
-function carregarProdutos() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_produtos')) || []
-  } catch {
-    return []
-  }
-}
-
-function carregarVendas() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
-  } catch {
-    return []
-  }
-}
+import { fetchAutenticado } from '../utils/apiAuth'
 
 export default function ProdutosRelatorio() {
   const [filtroPedido, setFiltroPedido] = useState('')
@@ -24,10 +9,25 @@ export default function ProdutosRelatorio() {
   const [filtroQuantidade, setFiltroQuantidade] = useState('')
   const [filtroValor, setFiltroValor] = useState('')
   const [filtroVendedor, setFiltroVendedor] = useState('')
-  
-  const produtos = useMemo(() => carregarProdutos(), [])
-  const vendas = useMemo(() => carregarVendas(), [])
-  
+
+  const [produtos, setProdutos] = useState([])
+  const [vendas, setVendas] = useState([])
+  const [erro, setErro] = useState('')
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/produtos').then(res => res.json().then(data => ({ res, data }))),
+      fetchAutenticado('/api/vendas').then(res => res.json().then(data => ({ res, data }))),
+    ])
+      .then(([produtosResp, vendasResp]) => {
+        if (!produtosResp.res.ok) throw new Error(produtosResp.data.error)
+        if (!vendasResp.res.ok) throw new Error(vendasResp.data.message)
+        setProdutos(produtosResp.data.map(p => ({ ...p, preco: Number(p.preco) })))
+        setVendas(vendasResp.data.map(v => ({ ...v, total: Number(v.total) })))
+      })
+      .catch(err => setErro(err.message || 'Não foi possível carregar os dados.'))
+  }, [])
+
   // Estatísticas dos produtos
   const totalProdutos = produtos.length
   const valorTotalEstoque = produtos.reduce((sum, produto) => sum + produto.preco * produto.estoque, 0)
@@ -38,7 +38,7 @@ export default function ProdutosRelatorio() {
   // Soma quantidade vendida por produto
   const vendasPorProduto = vendas.reduce((acc, venda) => {
     venda.itens.forEach(item => {
-      acc[item.nome] = (acc[item.nome] || 0) + item.quantidade
+      acc[item.produtoNome] = (acc[item.produtoNome] || 0) + item.quantidade
     })
     return acc
   }, {})
@@ -51,19 +51,16 @@ export default function ProdutosRelatorio() {
   }));
 
   // Transformar vendas em formato plano para a tabela
-  // Adiciona idPedido sequencial formatado
   const vendasPlanas = useMemo(() => {
-    let seq = 1;
     return vendas.flatMap(venda => {
-      const idPedido = String(seq).padStart(5, '0');
-      seq++;
+      const idPedido = String(venda.idPedido).padStart(5, '0');
       return venda.itens.map(item => ({
         idPedido,
         data: new Date(venda.data).toLocaleString('pt-BR'),
-        produto: item.nome,
+        produto: item.produtoNome,
         quantidade: item.quantidade,
-        valor: `R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')}`,
-        vendedor: venda.vendedor || 'Sistema',
+        valor: `R$ ${Number(item.subtotal).toFixed(2).replace('.', ',')}`,
+        vendedor: venda.vendedorNome || 'Sistema',
       }));
     });
   }, [vendas]);
@@ -124,6 +121,12 @@ export default function ProdutosRelatorio() {
 
             {/* Campo de pesquisa removido */}
           </div>
+
+          {!!erro && (
+            <p className="mt-6 text-red-400 text-sm bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2">
+              {erro}
+            </p>
+          )}
 
           <div className="mt-10 grid gap-6">
             <div className="space-y-6 min-w-0">

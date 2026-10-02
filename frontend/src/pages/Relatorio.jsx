@@ -1,17 +1,20 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Navbar from '../components/Navbar'
-
-function carregarVendas() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
-  } catch {
-    return []
-  }
-}
+import { fetchAutenticado } from '../utils/apiAuth'
 
 export default function Relatorio() {
-  const vendas = useMemo(() => carregarVendas(), [])
-  
+  const [vendas, setVendas] = useState([])
+  const [erro, setErro] = useState('')
+
+  useEffect(() => {
+    fetchAutenticado('/api/vendas')
+      .then(res => res.json().then(data => {
+        if (!res.ok) throw new Error(data.message)
+        setVendas(data.map(v => ({ ...v, total: Number(v.total) })))
+      }))
+      .catch(err => setErro(err.message || 'Não foi possível carregar as vendas.'))
+  }, [])
+
   // Calcular estatísticas de pagamento
   const estatisticasPagamento = useMemo(() => {
     const pagamentos = { Dinheiro: 0, Pix: 0, Debito: 0, Credito: 0 }
@@ -65,6 +68,12 @@ export default function Relatorio() {
 
             {/* Filtro removido */}
           </div>
+
+          {!!erro && (
+            <p className="mt-6 text-red-400 text-sm bg-red-400/10 border border-red-400/30 rounded-lg px-4 py-2">
+              {erro}
+            </p>
+          )}
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.7fr_0.65fr]">
             <div className="space-y-6">

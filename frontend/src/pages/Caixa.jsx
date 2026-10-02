@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import ReciboImpressao from '../components/ReciboImpressao'
+import { fetchAutenticado } from '../utils/apiAuth'
 import '../print.css';
 
 async function carregarProdutos() {
@@ -39,21 +40,6 @@ async function atualizarProdutoBackend(produto) {
   }
 }
 
-function salvarVendas(vendas) {
-  try {
-    localStorage.setItem('openfest_vendas', JSON.stringify(vendas))
-  } catch (error) {
-    console.error('Erro ao salvar vendas:', error)
-  }
-}
-
-function carregarVendas() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
-  } catch {
-    return []
-  }
-}
 
 export default function Caixa() {
   const [mostrarRecibo, setMostrarRecibo] = useState(false);
@@ -132,16 +118,23 @@ export default function Caixa() {
       clearInterval(poolRef.current);
     }
     if (carrinho.length > 0) {
-      const venda = {
-        id: Date.now(),
-        data: new Date(),
-        itens: carrinho,
-        total: carrinho.reduce((acc, item) => acc + Number(item.preco) * Number(item.quantidade), 0),
-        vendedor: 'Sistema',
-        tipoPagamento,
-      };
-      const vendasAtuais = carregarVendas();
-      salvarVendas([...vendasAtuais, venda]);
+      const totalVenda = carrinho.reduce((acc, item) => acc + Number(item.preco) * Number(item.quantidade), 0);
+
+      fetchAutenticado('/api/vendas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itens: carrinho.map(item => ({
+            produtoId: item.id,
+            quantidade: item.quantidade,
+            precoUnit: Number(item.preco),
+          })),
+          total: totalVenda,
+          tipoPagamento,
+        }),
+      }).catch(() => {
+        // Falha ao registrar a venda no banco não deve travar o fluxo já confirmado.
+      });
 
       // Atualizar estoque e bloquear produtos se necessário (persistindo no banco)
       const produtosAtualizados = produtos.map(produto => {
