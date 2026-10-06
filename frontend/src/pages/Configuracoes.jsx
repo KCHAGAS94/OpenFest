@@ -157,7 +157,7 @@ export default function Configuracoes() {
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
         <div>
           <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Sistema</p>
           <h1 className="text-3xl font-semibold">Configurações</h1>

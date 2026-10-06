@@ -120,8 +120,8 @@ export default function Produtos() {
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
       
-      <main className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-8">
+      <main className="max-w-6xl mx-auto p-4 md:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-100">Gestão de Produtos</h1>
             <p className="text-gray-400 text-sm">Cadastre e gerencie os itens do evento</p>

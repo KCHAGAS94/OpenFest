@@ -192,13 +192,13 @@ export default function Funcionarios() {
     <>
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        <section className="rounded-3xl bg-gray-900/80 border border-white/10 p-8 shadow-xl shadow-black/20">
+      <main className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-10">
+        <section className="rounded-3xl bg-gray-900/80 border border-white/10 p-5 md:p-8 shadow-xl shadow-black/20">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-pink-400 mb-2">Gestão</p>
-              <h1 className="text-3xl font-semibold text-white">Funcionários</h1>
-              <div className="mt-4 flex flex-wrap items-center gap-8 text-sm uppercase tracking-[0.3em] text-gray-300">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white">Funcionários</h1>
+              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 md:gap-8 text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.3em] text-gray-300">
                 <a href="/gestao" className="hover:text-white/80">Dashboard</a>
                 <a href="/relatorio" className="hover:text-white/80">Financeiro</a>
                 <a href="/produtos/relatorio" className="hover:text-white/80">Produtos</a>
