@@ -1,13 +1,11 @@
 import { useLocation } from 'react-router-dom'
-
-const links = [
-  { href: '/caixa', label: 'Caixa' },
-  { href: '/produtos', label: 'Produtos' },
-  { href: '/gestao', label: 'Gestão' },
-]
+import { PERMISSOES, temPermissao, sair } from '../utils/configuracoes'
 
 export default function Navbar() {
   const { pathname } = useLocation()
+  const links = PERMISSOES
+    .filter(({ chave }) => temPermissao(chave))
+    .map(({ rota, label }) => ({ href: rota, label }))
 
   return (
     <header className="border-b border-white/10 bg-black sticky top-0 z-50">
@@ -33,7 +31,7 @@ export default function Navbar() {
 
           <button
             onClick={() => {
-              localStorage.removeItem('token')
+              sair()
               window.location.href = '/login'
             }}
             className="ml-4 px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"

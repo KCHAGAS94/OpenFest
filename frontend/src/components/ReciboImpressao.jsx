@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function ReciboImpressao({ evento, itens, total, data, onAfterPrint }) {
+export default function ReciboImpressao({ evento, itens, total, data, mensagem = 'Obrigado pela preferência!', onAfterPrint }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       window.print();
@@ -113,7 +113,7 @@ export default function ReciboImpressao({ evento, itens, total, data, onAfterPri
 
             {/* 6. Agradecimento - RETORNADO */}
             <div className="texto-detalhe" style={{ fontSize: '11px', marginTop: '5px' }}>
-              <span>Obrigado pela preferência!</span>
+              <span>{mensagem}</span>
             </div>
           </div>
         ))

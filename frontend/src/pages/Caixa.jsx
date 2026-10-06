@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import ReciboImpressao from '../components/ReciboImpressao'
+import { carregarConfig, CONFIG_PADRAO } from '../utils/configuracoes'
 import '../print.css';
 
 function carregarProdutos() {
@@ -55,6 +56,11 @@ export default function Caixa() {
   const [loadingPag, setLoadingPag] = useState(false)
   const [valorPago, setValorPago] = useState('')
   const poolRef = useRef(null)
+  const configRef = useRef(CONFIG_PADRAO)
+
+  useEffect(() => {
+    carregarConfig().then((config) => { configRef.current = config })
+  }, [])
 
   useEffect(() => {
     function onFocus() { setProdutos(carregarProdutos()) }
@@ -150,8 +156,14 @@ export default function Caixa() {
         const qtd = Number(item.quantidade);
         return acc + (isNaN(preco) || isNaN(qtd) ? 0 : preco * qtd);
       }, 0);
+      const config = configRef.current;
+      if (!config.imprimirAutomatico) {
+        concluirVenda();
+        return;
+      }
       const recibo = {
-        evento: 'SwingSamba',
+        evento: config.nomeEvento,
+        mensagem: config.mensagemRecibo,
         itens: carrinho.map(item => {
           const preco = Number(item.preco);
           const qtd = Number(item.quantidade);
@@ -402,6 +414,7 @@ export default function Caixa() {
                   itens={reciboInfo.itens}
                   total={reciboInfo.total}
                   data={reciboInfo.data}
+                  mensagem={reciboInfo.mensagem}
                   onAfterPrint={concluirVenda}
                 />
               )}

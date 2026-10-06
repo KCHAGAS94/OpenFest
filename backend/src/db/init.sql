@@ -5,6 +5,8 @@ CREATE DATABASE openfest;
 
 \c openfest;
 
+-- Obs.: o login agora usa a tabela usuarios_sistema, criada automaticamente
+-- pelo backend ao iniciar (src/db/setup.js), junto com configuracoes_sistema.
 CREATE TABLE IF NOT EXISTS users (
   id          SERIAL PRIMARY KEY,
   name        VARCHAR(150)        NOT NULL,

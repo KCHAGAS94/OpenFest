@@ -13,6 +13,15 @@ export function authMiddleware(req, res, next) {
     req.user = decoded
     next()
   } catch {
-    res.status(403).json({ message: 'Token inválido ou expirado.' })
+    res.status(401).json({ message: 'Token inválido ou expirado.' })
+  }
+}
+
+export function requirePermissao(permissao) {
+  return (req, res, next) => {
+    if (!req.user?.permissoes?.[permissao]) {
+      return res.status(403).json({ message: 'Você não tem permissão para acessar este recurso.' })
+    }
+    next()
   }
 }
