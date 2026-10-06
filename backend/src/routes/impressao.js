@@ -17,12 +17,15 @@ router.post('/', (req, res) => {
     return res.status(400).json({ message: 'Cupom sem itens.' })
   }
   fila.push({ id: proximoId++, recibo })
+  console.log(`[impressão] cupom recebido de ${req.user.email} (${fila.length} na fila)`)
   res.status(201).json({ ok: true })
 })
 
 // A estação retira todos os pendentes de uma vez para imprimir.
-router.get('/pendentes', (_req, res) => {
-  res.json(fila.splice(0, fila.length))
+router.get('/pendentes', (req, res) => {
+  const pendentes = fila.splice(0, fila.length)
+  if (pendentes.length) console.log(`[impressão] estação (${req.user.email}) retirou ${pendentes.length} cupom(ns)`)
+  res.json(pendentes)
 })
 
 export default router

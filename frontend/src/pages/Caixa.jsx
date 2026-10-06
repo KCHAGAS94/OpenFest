@@ -302,7 +302,14 @@ export default function Caixa() {
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
 
-      {ehEstacaoImpressao() && <FilaImpressao pausado={mostrarRecibo} />}
+      {ehEstacaoImpressao() && (
+        <>
+          <FilaImpressao pausado={mostrarRecibo} />
+          <p className="bg-green-500/10 border-b border-green-500/20 text-green-400 text-xs text-center py-1.5">
+            🖨️ Estação de impressão ativa — cupons dos celulares saem aqui. Mantenha esta janela aberta.
+          </p>
+        </>
+      )}
 
       {/* ─── Modal de Pagamento ─── */}
       {etapa !== 'idle' && (

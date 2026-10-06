@@ -74,7 +74,11 @@ export async function apiFetch(url, { body, ...options } = {}) {
 // Marcação por aparelho: só o PC com a impressora deve ser a estação de impressão.
 const CHAVE_ESTACAO = 'openfest_estacao_impressao'
 
+// Celular/tablet nunca é estação: a impressora fica no PC, ligada por cabo.
+export const ehCelular = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+
 export function ehEstacaoImpressao() {
+  if (ehCelular) return false
   try {
     return localStorage.getItem(CHAVE_ESTACAO) === 'true'
   } catch {

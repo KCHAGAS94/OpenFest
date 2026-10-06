@@ -7,6 +7,7 @@ import {
   usuarioLogado,
   ehEstacaoImpressao,
   definirEstacaoImpressao,
+  ehCelular,
 } from '../utils/configuracoes'
 import { dadosLocaisPendentes, importarDadosLocais } from '../utils/dados'
 
@@ -198,6 +199,11 @@ export default function Configuracoes() {
                     className="w-5 h-5 accent-pink-500"
                   />
                 </label>
+                {ehCelular ? (
+                  <p className="text-xs text-gray-400 bg-gray-800 rounded-xl px-4 py-3 mt-3">
+                    🖨️ Neste celular, os cupons são enviados para a impressora do PC (estação de impressão).
+                  </p>
+                ) : (
                 <label className="flex items-center justify-between gap-4 bg-gray-800 rounded-xl px-4 py-3 mt-3 cursor-pointer">
                   <span>
                     <span className="block font-medium">Este aparelho é a estação de impressão</span>
@@ -215,6 +221,7 @@ export default function Configuracoes() {
                     className="w-5 h-5 accent-pink-500"
                   />
                 </label>
+                )}
               </Secao>
 
               <div className="md:col-span-2 flex items-center justify-end gap-4">
