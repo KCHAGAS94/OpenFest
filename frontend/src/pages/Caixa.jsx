@@ -180,7 +180,7 @@ export default function Caixa() {
           confirmarPagamento(tipoPagamento, true);
         }
       } catch {}
-    }, 3000);
+    }, 2000);
   }
 
   // Venda de Débito/Crédito é feita fora do sistema (celular via NFC).
@@ -188,9 +188,11 @@ export default function Caixa() {
   function iniciarPollingCartao(valor, tipo, tipoPagamento) {
     if (!poolRef.current) poolRef.current = {};
     poolRef.current.tipoPagamento = tipoPagamento;
+    // A busca no Mercado Pago considera tudo desde que a espera começou.
+    const desde = Date.now();
     poolRef.current.interval = setInterval(async () => {
       try {
-        const params = new URLSearchParams({ valor: String(valor), tipo });
+        const params = new URLSearchParams({ valor: String(valor), tipo, desde: String(desde) });
         const res = await fetch(`/api/pagamento/cartao/verificar?${params.toString()}`);
         const data = await res.json();
         if (data.encontrado) {
@@ -198,7 +200,7 @@ export default function Caixa() {
           confirmarPagamento(tipoPagamento, true);
         }
       } catch {}
-    }, 3000);
+    }, 2000);
   }
 
   async function selecionarPagamento(tipo) {

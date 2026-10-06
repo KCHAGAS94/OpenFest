@@ -60,13 +60,18 @@ export async function criarPix(req, res) {
 }
 
 // ─── CARTÃO (venda feita fora do sistema, no celular via NFC) ──
-// Não cria cobrança nenhuma: só confere se existe um pagamento aprovado
-// recente (últimos N segundos) na conta Mercado Pago com o mesmo valor e tipo.
+// Não cria cobrança nenhuma: só confere se existe um pagamento aprovado na conta
+// Mercado Pago com o mesmo valor e tipo, criado depois que o Caixa começou a esperar.
 const TOLERANCIA_VALOR = 0.01
-const JANELA_BUSCA_MS = 10_000
+// Folga antes do início da espera (relógios diferentes e cobrança iniciada um pouco antes).
+const FOLGA_INICIO_MS = 30_000
+// Limite para um "desde" muito antigo não pegar pagamentos de outras vendas.
+const JANELA_MAXIMA_MS = 15 * 60_000
+// Pagamentos que já confirmaram uma venda não confirmam outra (ex.: dois celulares, mesmo valor).
+const pagamentosUsados = new Set()
 
 export async function verificarPagamentoRecente(req, res) {
-  const { valor, tipo } = req.query
+  const { valor, tipo, desde } = req.query
 
   const valorNumerico = Number(valor)
   if (!valor || isNaN(valorNumerico) || valorNumerico <= 0) {
@@ -74,7 +79,10 @@ export async function verificarPagamentoRecente(req, res) {
   }
 
   const paymentTypeId = tipo === 'credito' ? 'credit_card' : 'debit_card'
-  const beginDate = new Date(Date.now() - JANELA_BUSCA_MS).toISOString()
+  const agora = Date.now()
+  const inicioEspera = Number(desde) || agora
+  const inicioBusca = Math.max(inicioEspera - FOLGA_INICIO_MS, agora - JANELA_MAXIMA_MS)
+  const beginDate = new Date(inicioBusca).toISOString()
   const endDate = new Date().toISOString()
 
   try {
@@ -105,6 +113,7 @@ export async function verificarPagamentoRecente(req, res) {
     const pagamentoEncontrado = (data.results || []).find(p =>
       p.status === 'approved' &&
       p.payment_type_id === paymentTypeId &&
+      !pagamentosUsados.has(p.id) &&
       Math.abs(Number(p.transaction_amount) - valorNumerico) <= TOLERANCIA_VALOR
     )
 
@@ -112,6 +121,7 @@ export async function verificarPagamentoRecente(req, res) {
       return res.json({ encontrado: false })
     }
 
+    pagamentosUsados.add(pagamentoEncontrado.id)
     res.json({ encontrado: true, id: pagamentoEncontrado.id, status: pagamentoEncontrado.status })
   } catch (err) {
     console.error('Erro ao verificar pagamento recente:', err)
