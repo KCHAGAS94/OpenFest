@@ -1,6 +1,10 @@
 import { useMemo, useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import ReciboImpressao from '../components/ReciboImpressao'
 import { listarProdutos, listarVendas } from '../utils/dados'
+import { carregarConfig, ehEstacaoImpressao } from '../utils/configuracoes'
+import { montarRecibo, enviarParaFila } from '../utils/recibo'
+import '../print.css'
 
 export default function ProdutosRelatorio() {
   const [filtroPedido, setFiltroPedido] = useState('')
@@ -48,6 +52,7 @@ export default function ProdutosRelatorio() {
       const idPedido = String(seq).padStart(5, '0');
       seq++;
       return venda.itens.map(item => ({
+        vendaId: venda.id,
         idPedido,
         data: new Date(venda.data).toLocaleString('pt-BR'),
         produto: item.nome,
@@ -99,6 +104,44 @@ export default function ProdutosRelatorio() {
         .some((campo) => String(campo).toLowerCase().includes(termo))
     )
   }, [buscaMobile, vendasFiltradas])
+
+  // Pedido aberto ao tocar numa linha/cartão, com opção de reimprimir o pedido inteiro.
+  const [pedidoAberto, setPedidoAberto] = useState(null)
+  const [reciboLocal, setReciboLocal] = useState(null)
+  const [msgReimpressao, setMsgReimpressao] = useState({ tipo: '', texto: '' })
+  const [reimprimindo, setReimprimindo] = useState(false)
+
+  function abrirPedido(linha) {
+    const venda = vendas.find((v) => v.id === linha.vendaId)
+    if (!venda) return
+    setPedidoAberto({ ...venda, idPedido: linha.idPedido })
+    setMsgReimpressao({ tipo: '', texto: '' })
+  }
+
+  async function reimprimir() {
+    setReimprimindo(true)
+    setMsgReimpressao({ tipo: '', texto: '' })
+    try {
+      const config = await carregarConfig()
+      const recibo = montarRecibo({
+        itens: pedidoAberto.itens,
+        config,
+        data: pedidoAberto.data,
+        pagamento: pedidoAberto.tipoPagamento,
+      })
+      if (ehEstacaoImpressao()) {
+        setReciboLocal(recibo)
+        setMsgReimpressao({ tipo: 'ok', texto: 'Pedido enviado para a impressora.' })
+      } else {
+        await enviarParaFila(recibo)
+        setMsgReimpressao({ tipo: 'ok', texto: 'Pedido enviado para a impressora do PC.' })
+      }
+    } catch (err) {
+      setMsgReimpressao({ tipo: 'erro', texto: err.message || 'Não foi possível reimprimir.' })
+    } finally {
+      setReimprimindo(false)
+    }
+  }
 
 
   return (
@@ -183,7 +226,12 @@ export default function ProdutosRelatorio() {
                   ) : (
                     <div className="space-y-2 max-h-144 overflow-y-auto scrollbar-tema">
                       {vendasMobile.map((venda, index) => (
-                        <div key={`${venda.idPedido}-${venda.data}-${index}`} className="rounded-xl border border-white/10 bg-gray-900 p-4">
+                        <button
+                          type="button"
+                          key={`${venda.idPedido}-${venda.data}-${index}`}
+                          onClick={() => abrirPedido(venda)}
+                          className="block w-full text-left rounded-xl border border-white/10 bg-gray-900 p-4 active:scale-[0.99] hover:border-pink-500/40 transition"
+                        >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-medium text-white wrap-break-word">{venda.produto}</p>
@@ -195,7 +243,7 @@ export default function ProdutosRelatorio() {
                             <span>Qtd: <span className="text-gray-200">{venda.quantidade}</span></span>
                             <span>Vendedor: <span className="text-gray-200">{venda.vendedor}</span></span>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -274,7 +322,12 @@ export default function ProdutosRelatorio() {
                         </tr>
                       ) : (
                         vendasFiltradas.map((venda, index) => (
-                          <tr key={`${venda.data}-${index}`}>
+                          <tr
+                            key={`${venda.data}-${index}`}
+                            onClick={() => abrirPedido(venda)}
+                            className="cursor-pointer hover:bg-white/5"
+                            title="Ver pedido e reimprimir"
+                          >
                             <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.idPedido}</td>
                             <td className="border border-white/10 px-4 py-3 whitespace-nowrap">{venda.data}</td>
                             <td className="border border-white/10 px-4 py-3 wrap-break-word">{venda.produto}</td>
@@ -293,6 +346,72 @@ export default function ProdutosRelatorio() {
           </div>
         </section>
       </main>
+
+      {pedidoAberto && (
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setPedidoAberto(null)} />
+          <div className="relative w-full sm:max-w-md bg-gray-900 border border-white/10 rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Pedido {pedidoAberto.idPedido}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(pedidoAberto.data).toLocaleString('pt-BR')} · {pedidoAberto.tipoPagamento} · {pedidoAberto.vendedor}
+                </p>
+              </div>
+              <button onClick={() => setPedidoAberto(null)} className="text-gray-500 hover:text-white text-2xl leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 scrollbar-tema">
+              {pedidoAberto.itens.map((item, index) => (
+                <div key={index} className="flex items-center justify-between gap-3 bg-gray-800 rounded-lg px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-white wrap-break-word">{item.nome}</p>
+                    <p className="text-xs text-gray-400">
+                      {item.quantidade} × R$ {item.preco.toFixed(2).replace('.', ',')}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold text-gray-200">
+                    R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-white/10 mt-4 pt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Total</span>
+                <span className="text-xl font-bold text-white">R$ {pedidoAberto.total.toFixed(2).replace('.', ',')}</span>
+              </div>
+              {msgReimpressao.texto && (
+                <p className={`text-sm rounded-lg px-3 py-2 border ${msgReimpressao.tipo === 'erro'
+                  ? 'text-red-400 bg-red-400/10 border-red-400/20'
+                  : 'text-green-400 bg-green-400/10 border-green-400/20'}`}
+                >
+                  {msgReimpressao.texto}
+                </p>
+              )}
+              <button
+                onClick={reimprimir}
+                disabled={reimprimindo}
+                className="w-full py-3 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 rounded-xl font-semibold text-white transition-colors"
+              >
+                {reimprimindo ? 'Enviando...' : '🖨️ Reimprimir pedido'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reciboLocal && (
+        <ReciboImpressao
+          evento={reciboLocal.evento}
+          itens={reciboLocal.itens}
+          total={reciboLocal.total}
+          data={reciboLocal.data}
+          mensagem={reciboLocal.mensagem}
+          onAfterPrint={() => setReciboLocal(null)}
+        />
+      )}
     </>
   )
 }

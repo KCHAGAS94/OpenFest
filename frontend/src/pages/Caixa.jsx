@@ -4,6 +4,7 @@ import ReciboImpressao from '../components/ReciboImpressao'
 import FilaImpressao from '../components/FilaImpressao'
 import { carregarConfig, CONFIG_PADRAO, apiFetch, ehEstacaoImpressao } from '../utils/configuracoes'
 import { listarProdutos, registrarVenda } from '../utils/dados'
+import { montarRecibo, enviarParaFila } from '../utils/recibo'
 import '../print.css';
 
 // Máscara de centavos: "750" -> "7,50". Sem dígitos (ou só zeros) fica vazio.
@@ -129,40 +130,16 @@ export default function Caixa() {
       });
       setProdutos(produtosAtualizados);
 
-      // Montar dados do recibo para impressão
-      const totalRecibo = carrinho.reduce((acc, item) => {
-        const preco = Number(item.preco);
-        const qtd = Number(item.quantidade);
-        return acc + (isNaN(preco) || isNaN(qtd) ? 0 : preco * qtd);
-      }, 0);
       const config = configRef.current;
       if (!config.imprimirAutomatico) {
         concluirVenda();
         return;
       }
-      const recibo = {
-        evento: config.nomeEvento,
-        mensagem: config.mensagemRecibo,
-        itens: carrinho.map(item => {
-          const preco = Number(item.preco);
-          const qtd = Number(item.quantidade);
-          const unidadesCombo = item.tipo === 'combo' ? (Number(item.unidadesCombo) || 1) : 1;
-          const precoUnitario = isNaN(preco) ? 0 : preco / unidadesCombo;
-          return {
-            nome: item.nome,
-            quantidade: isNaN(qtd) ? 0 : qtd * unidadesCombo,
-            preco: precoUnitario,
-            total: (isNaN(preco) || isNaN(qtd)) ? 0 : preco * qtd
-          };
-        }),
-        total: isNaN(totalRecibo) ? 0 : totalRecibo,
-        data: new Date().toLocaleString('pt-BR'),
-        pagamento: tipoPagamento,
-      };
+      const recibo = montarRecibo({ itens: carrinho, config, pagamento: tipoPagamento });
       // Fora da estação (ex.: celular), o cupom vai para a fila e sai na impressora do PC.
       if (!ehEstacaoImpressao()) {
         if (imprimir) {
-          apiFetch('/api/impressao', { method: 'POST', body: { recibo } })
+          enviarParaFila(recibo)
             .catch(() => alert('Venda concluída, mas não foi possível enviar o cupom para a impressora do PC.'));
         }
         concluirVenda();
