@@ -8,6 +8,7 @@ import Relatorio from './pages/Relatorio'
 import Funcionarios from './pages/Funcionarios'
 import Configuracoes from './pages/Configuracoes'
 import RotaProtegida from './components/RotaProtegida'
+import ConfirmarFechamento from './components/ConfirmarFechamento'
 import { primeiraRotaPermitida } from './utils/configuracoes'
 
 function protegida(permissao, elemento) {
@@ -16,6 +17,8 @@ function protegida(permissao, elemento) {
 
 export default function App() {
   return (
+    <>
+    <ConfirmarFechamento />
     <Routes>
       <Route path="/" element={<Navigate to={primeiraRotaPermitida()} replace />} />
       <Route path="/login" element={<Login />} />
@@ -27,5 +30,6 @@ export default function App() {
       <Route path="/funcionarios" element={protegida('gestao', <Funcionarios />)} />
       <Route path="/configuracoes" element={protegida('configuracoes', <Configuracoes />)} />
     </Routes>
+    </>
   )
 }

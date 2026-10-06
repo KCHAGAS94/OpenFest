@@ -22,6 +22,18 @@ function tokenValido(token) {
   }
 }
 
+// Saídas feitas pelo próprio sistema (login, sair) não pedem confirmação de fechamento.
+let saidaPermitida = false
+
+export function irPara(url) {
+  saidaPermitida = true
+  window.location.href = url
+}
+
+export function saidaFoiPermitida() {
+  return saidaPermitida
+}
+
 export function iniciarSessao(token, usuario) {
   localStorage.setItem('token', token)
   localStorage.setItem('user', JSON.stringify(usuario))
@@ -63,7 +75,7 @@ export async function apiFetch(url, { body, ...options } = {}) {
 
   if (res.status === 401) {
     sair()
-    window.location.href = '/login'
+    irPara('/login')
   }
 
   const data = await res.json().catch(() => ({}))

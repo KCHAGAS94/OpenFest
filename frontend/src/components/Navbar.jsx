@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { PERMISSOES, temPermissao, sair, usuarioLogado } from '../utils/configuracoes'
+import { PERMISSOES, temPermissao, sair, usuarioLogado, irPara } from '../utils/configuracoes'
 
 const ICONES = { caixa: '💰', produtos: '🛍️', gestao: '📊', configuracoes: '⚙️' }
 
@@ -13,7 +13,7 @@ function estaAtivo(chave, rota, pathname) {
 
 function encerrarSessao() {
   sair()
-  window.location.href = '/login'
+  irPara('/login')
 }
 
 export default function Navbar() {

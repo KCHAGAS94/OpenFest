@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { iniciarSessao, primeiraRotaPermitida } from '../utils/configuracoes'
+import { iniciarSessao, primeiraRotaPermitida, irPara } from '../utils/configuracoes'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -27,7 +27,7 @@ export default function Login() {
         setError(data.message || 'Erro ao fazer login.')
       } else {
         iniciarSessao(data.token, data.user)
-        window.location.href = primeiraRotaPermitida()
+        irPara(primeiraRotaPermitida())
       }
     } catch {
       setError('Não foi possível conectar ao servidor.')
