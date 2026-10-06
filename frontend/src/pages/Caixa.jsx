@@ -6,6 +6,13 @@ import { carregarConfig, CONFIG_PADRAO, apiFetch, ehEstacaoImpressao } from '../
 import { listarProdutos, registrarVenda } from '../utils/dados'
 import '../print.css';
 
+// Máscara de centavos: "750" -> "7,50". Sem dígitos (ou só zeros) fica vazio.
+function formatarCentavos(texto) {
+  const centavos = parseInt(texto.replace(/\D/g, '') || '0', 10);
+  if (!centavos) return '';
+  return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 async function carregarProdutos() {
   try {
     return await listarProdutos();
@@ -302,14 +309,7 @@ export default function Caixa() {
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
 
-      {ehEstacaoImpressao() && (
-        <>
-          <FilaImpressao pausado={mostrarRecibo} />
-          <p className="bg-green-500/10 border-b border-green-500/20 text-green-400 text-xs text-center py-1.5">
-            🖨️ Estação de impressão ativa — cupons dos celulares saem aqui. Mantenha esta janela aberta.
-          </p>
-        </>
-      )}
+      {ehEstacaoImpressao() && <FilaImpressao pausado={mostrarRecibo} />}
 
       {/* ─── Modal de Pagamento ─── */}
       {etapa !== 'idle' && (
@@ -349,19 +349,37 @@ export default function Caixa() {
                 <div>
                   <p className="text-gray-400 text-sm mb-4">Total: <span className="text-pink-400 font-bold text-base">R$ {total.toFixed(2)}</span></p>
                   <label className="block text-gray-400 text-sm mb-1">Valor recebido</label>
+                  {/* inputMode="none" esconde o teclado do celular; no PC ainda dá para digitar */}
                   <input
                     type="text"
+                    inputMode="none"
                     placeholder={`R$ ${total.toFixed(2)}`}
                     value={valorPago}
-                    onChange={(e) => {
-                      const onlyNums = e.target.value.replace(/\D/g, "");
-                      let centavos = onlyNums ? parseInt(onlyNums, 10) : 0;
-                      let formatted = (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                      setValorPago(formatted);
-                    }}
-                    className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-pink-500 mb-4"
+                    onChange={(e) => setValorPago(formatarCentavos(e.target.value))}
+                    className="w-full bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-pink-500 mb-3"
                     autoFocus
                   />
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((tecla) => (
+                      <button
+                        key={tecla}
+                        type="button"
+                        onClick={() => setValorPago((atual) => {
+                          const digitos = atual.replace(/\D/g, '');
+                          if (tecla === 'C') return '';
+                          if (tecla === '⌫') return formatarCentavos(digitos.slice(0, -1));
+                          return formatarCentavos(digitos + tecla);
+                        })}
+                        className={`py-3 rounded-xl text-xl font-semibold transition-colors active:scale-95 ${
+                          tecla === 'C' || tecla === '⌫'
+                            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            : 'bg-gray-800 text-white hover:bg-gray-700'
+                        }`}
+                      >
+                        {tecla}
+                      </button>
+                    ))}
+                  </div>
                   {valorPago && Number(valorPago.replace('.', '').replace(',', '.')) >= total && (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-center mb-4">
                       <p className="text-gray-400 text-xs mb-1">Troco</p>
