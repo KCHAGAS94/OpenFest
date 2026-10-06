@@ -8,8 +8,8 @@
     margin: 0 !important;
     padding: 0 !important;
     width: 100vw !important;
-    height: 100vh !important;
-    overflow: hidden !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   /* Esconde tudo fora do recibo */
   body > *:not(.print-container) {
