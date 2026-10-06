@@ -1,12 +1,15 @@
-import express from 'express';
-import * as produtosController from '../controllers/produtosController.js';
+import { Router } from 'express'
+import { authMiddleware, requirePermissao } from '../middlewares/auth.js'
+import { listarProdutos, criarProduto, atualizarProduto, excluirProduto } from '../controllers/produtosController.js'
 
-const router = express.Router();
+const router = Router()
 
-// Rota para cadastrar produto com estoque
-router.post('/', produtosController.cadastrarProduto);
+router.use(authMiddleware)
 
-// Rota para listar produtos
-router.get('/', produtosController.listarProdutos);
+// Qualquer usuário logado lista (o Caixa precisa); só quem gerencia produtos altera.
+router.get('/', listarProdutos)
+router.post('/', requirePermissao('produtos'), criarProduto)
+router.put('/:id', requirePermissao('produtos'), atualizarProduto)
+router.delete('/:id', requirePermissao('produtos'), excluirProduto)
 
-export default router;
+export default router

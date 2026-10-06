@@ -6,6 +6,8 @@ import pagamentoRoutes from './src/routes/pagamento.js'
 import produtosRoutes from './src/routes/produtos.js'
 import usuariosRoutes from './src/routes/usuarios.js'
 import configuracoesRoutes from './src/routes/configuracoes.js'
+import impressaoRoutes from './src/routes/impressao.js'
+import vendasRoutes from './src/routes/vendas.js'
 import { prepararBanco } from './src/db/setup.js'
 import { printReceipt } from './src/printTest.js' // Movi o import para o topo
 
@@ -25,6 +27,8 @@ app.use('/api/pagamento', pagamentoRoutes)
 app.use('/api/produtos', produtosRoutes)
 app.use('/api/usuarios', usuariosRoutes)
 app.use('/api/configuracoes', configuracoesRoutes)
+app.use('/api/impressao', impressaoRoutes)
+app.use('/api/vendas', vendasRoutes)
 
 // Endpoint de impressão (Agora o 'app' já existe aqui)
 app.post('/api/print', async (req, res) => {

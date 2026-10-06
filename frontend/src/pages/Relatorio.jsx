@@ -1,16 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-
-function carregarVendas() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
-  } catch {
-    return []
-  }
-}
+import { listarVendas } from '../utils/dados'
 
 export default function Relatorio() {
-  const vendas = useMemo(() => carregarVendas(), [])
+  const [vendas, setVendas] = useState([])
+
+  useEffect(() => {
+    listarVendas().then(setVendas).catch(() => {})
+  }, [])
   
   // Calcular estatísticas de pagamento
   const estatisticasPagamento = useMemo(() => {

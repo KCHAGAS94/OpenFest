@@ -1,18 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-
-// Funções de Persistência
-function carregarProdutos() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_produtos')) || []
-  } catch {
-    return []
-  }
-}
-
-function salvarProdutos(produtos) {
-  localStorage.setItem('openfest_produtos', JSON.stringify(produtos))
-}
+import { listarProdutos, salvarProduto, excluirProduto } from '../utils/dados'
 
 // Máscara monetária: digita centavos e desliza para reais (7 -> 0,07 -> 0,75 -> 7,50)
 function formatarValorDigitado(valorDigitado) {
@@ -27,8 +15,9 @@ function paraNumero(valorFormatado) {
 }
 
 export default function Produtos() {
-  const [produtos, setProdutos] = useState(carregarProdutos)
-  
+  const [produtos, setProdutos] = useState([])
+  const [erro, setErro] = useState('')
+
   // Estados dos Modais
   const [modalAberto, setModalAberto] = useState(false)
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false)
@@ -46,10 +35,24 @@ export default function Produtos() {
     unidadesCombo: ''
   })
 
-  // Sincroniza com localStorage sempre que a lista mudar
   useEffect(() => {
-    salvarProdutos(produtos)
-  }, [produtos])
+    listarProdutos().then(setProdutos).catch((err) => setErro(err.message))
+  }, [])
+
+  // Grava no banco e troca o produto na lista pela versão salva.
+  async function gravar(produto) {
+    setErro('')
+    try {
+      const salvo = await salvarProduto(produto)
+      setProdutos((prev) => prev.some((p) => p.id === salvo.id)
+        ? prev.map((p) => (p.id === salvo.id ? salvo : p))
+        : [...prev, salvo])
+      return true
+    } catch (err) {
+      setErro(err.message)
+      return false
+    }
+  }
 
   // --- Funções de Ação ---
 
@@ -72,7 +75,7 @@ export default function Produtos() {
     setModalAberto(true)
   }
 
-  function handleSalvar(e) {
+  async function handleSalvar(e) {
     e.preventDefault()
 
     const dadosComuns = {
@@ -84,19 +87,7 @@ export default function Produtos() {
       unidadesCombo: form.tipo === 'combo' ? parseInt(form.unidadesCombo) || 1 : undefined
     }
 
-    if (editandoId) {
-      const novosProdutos = produtos.map(p => {
-        if (p.id === editandoId) {
-          return { ...p, ...dadosComuns }
-        }
-        return p
-      })
-      setProdutos(novosProdutos)
-    } else {
-      const novoProduto = { id: Date.now(), ...dadosComuns }
-      setProdutos([...produtos, novoProduto])
-    }
-    setModalAberto(false)
+    if (await gravar({ id: editandoId, ...dadosComuns })) setModalAberto(false)
   }
 
   // --- Funções de Exclusão Customizada ---
@@ -106,20 +97,23 @@ export default function Produtos() {
     setModalExcluirAberto(true)
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (produtoParaExcluir) {
-      const novaLista = produtos.filter(p => p.id !== produtoParaExcluir.id)
-      setProdutos(novaLista)
+      setErro('')
+      try {
+        await excluirProduto(produtoParaExcluir.id)
+        setProdutos((prev) => prev.filter(p => p.id !== produtoParaExcluir.id))
+      } catch (err) {
+        setErro(err.message)
+      }
       setModalExcluirAberto(false)
       setProdutoParaExcluir(null)
     }
   }
 
   function alternarBloqueio(id) {
-    const novaLista = produtos.map(p => 
-      p.id === id ? { ...p, bloqueado: !p.bloqueado } : p
-    )
-    setProdutos(novaLista)
+    const produto = produtos.find(p => p.id === id)
+    if (produto) gravar({ ...produto, bloqueado: !produto.bloqueado })
   }
 
   return (
@@ -139,6 +133,10 @@ export default function Produtos() {
             + Novo Produto
           </button>
         </div>
+
+        {erro && (
+          <p className="mb-6 text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{erro}</p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {produtos.map(produto => (

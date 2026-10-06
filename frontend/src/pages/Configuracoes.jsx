@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import { PERMISSOES, CONFIG_PADRAO, apiFetch, usuarioLogado } from '../utils/configuracoes'
+import {
+  PERMISSOES,
+  CONFIG_PADRAO,
+  apiFetch,
+  usuarioLogado,
+  ehEstacaoImpressao,
+  definirEstacaoImpressao,
+} from '../utils/configuracoes'
+import { dadosLocaisPendentes, importarDadosLocais } from '../utils/dados'
 
 const FORM_VAZIO = {
   nome: '',
@@ -33,6 +41,10 @@ export default function Configuracoes() {
   const [config, setConfig] = useState(CONFIG_PADRAO)
   const [msgConfig, setMsgConfig] = useState({ tipo: '', texto: '' })
   const [salvandoConfig, setSalvandoConfig] = useState(false)
+  const [estacao, setEstacao] = useState(ehEstacaoImpressao)
+  const [dadosLocais, setDadosLocais] = useState(dadosLocaisPendentes)
+  const [msgImportacao, setMsgImportacao] = useState({ tipo: '', texto: '' })
+  const [importando, setImportando] = useState(false)
 
   const [usuarios, setUsuarios] = useState([])
   const [form, setForm] = useState(FORM_VAZIO)
@@ -121,6 +133,22 @@ export default function Configuracoes() {
     }
   }
 
+  async function importar() {
+    setImportando(true)
+    try {
+      const { produtosImportados, vendasImportadas } = await importarDadosLocais()
+      setDadosLocais(dadosLocaisPendentes())
+      setMsgImportacao({
+        tipo: 'ok',
+        texto: `Importação concluída: ${produtosImportados} produto(s) novo(s) e ${vendasImportadas} venda(s).`,
+      })
+    } catch (err) {
+      setMsgImportacao({ tipo: 'erro', texto: err.message })
+    } finally {
+      setImportando(false)
+    }
+  }
+
   function alternarPermissao(chave) {
     setForm((prev) => ({ ...prev, permissoes: { ...prev.permissoes, [chave]: !prev.permissoes[chave] } }))
   }
@@ -170,6 +198,23 @@ export default function Configuracoes() {
                     className="w-5 h-5 accent-pink-500"
                   />
                 </label>
+                <label className="flex items-center justify-between gap-4 bg-gray-800 rounded-xl px-4 py-3 mt-3 cursor-pointer">
+                  <span>
+                    <span className="block font-medium">Este aparelho é a estação de impressão</span>
+                    <span className="block text-xs text-gray-500">
+                      Marque só no PC com a impressora e deixe o Caixa aberto nele. Cupons de outros aparelhos (celular) saem aqui. Vale só para este aparelho e salva na hora.
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={estacao}
+                    onChange={(e) => {
+                      definirEstacaoImpressao(e.target.checked)
+                      setEstacao(e.target.checked)
+                    }}
+                    className="w-5 h-5 accent-pink-500"
+                  />
+                </label>
               </Secao>
 
               <div className="md:col-span-2 flex items-center justify-end gap-4">
@@ -183,6 +228,30 @@ export default function Configuracoes() {
                 </button>
               </div>
             </form>
+
+            {(dadosLocais.produtos.length > 0 || dadosLocais.vendas.length > 0 || msgImportacao.texto) && (
+              <Secao
+                titulo="Dados salvos neste navegador"
+                descricao="Produtos e vendas cadastrados antes de o sistema usar o banco. Importe para que apareçam em todos os aparelhos."
+              >
+                {(dadosLocais.produtos.length > 0 || dadosLocais.vendas.length > 0) && (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                    <p className="text-sm text-gray-300">
+                      {dadosLocais.produtos.length} produto(s) e {dadosLocais.vendas.length} venda(s) encontrados.
+                      Produtos com o mesmo nome de um já existente no banco não são duplicados.
+                    </p>
+                    <button
+                      onClick={importar}
+                      disabled={importando}
+                      className="shrink-0 px-5 py-2.5 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 rounded-xl font-semibold transition-colors"
+                    >
+                      {importando ? 'Importando...' : 'Importar para o banco'}
+                    </button>
+                  </div>
+                )}
+                <Aviso tipo={msgImportacao.tipo}>{msgImportacao.texto}</Aviso>
+              </Secao>
+            )}
 
             <Secao titulo="Usuários e permissões" descricao="Defina quem acessa cada área do sistema.">
               <form onSubmit={salvarUsuario} className="grid gap-4 md:grid-cols-3 mb-6">

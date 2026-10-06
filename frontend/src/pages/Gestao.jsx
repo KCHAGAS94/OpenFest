@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 // Utilitários para taxas
 const TAXAS_KEY = 'openfest_taxas_pagamento';
 function salvarTaxas(taxas) {
@@ -12,26 +12,16 @@ function carregarTaxas() {
   }
 }
 import Navbar from '../components/Navbar'
-
-function carregarProdutos() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_produtos')) || []
-  } catch {
-    return []
-  }
-}
-
-function carregarVendas() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
-  } catch {
-    return []
-  }
-}
+import { listarProdutos, listarVendas } from '../utils/dados'
 
 export default function Gestao() {
-  const produtos = useMemo(() => carregarProdutos(), [])
-  const vendas = useMemo(() => carregarVendas(), [])
+  const [produtos, setProdutos] = useState([])
+  const [vendas, setVendas] = useState([])
+
+  useEffect(() => {
+    listarProdutos().then(setProdutos).catch(() => {})
+    listarVendas().then(setVendas).catch(() => {})
+  }, [])
 
   // Estado das taxas
   const [taxaPix, setTaxaPix] = useState('');

@@ -71,6 +71,21 @@ export async function apiFetch(url, { body, ...options } = {}) {
   return data
 }
 
+// Marcação por aparelho: só o PC com a impressora deve ser a estação de impressão.
+const CHAVE_ESTACAO = 'openfest_estacao_impressao'
+
+export function ehEstacaoImpressao() {
+  try {
+    return localStorage.getItem(CHAVE_ESTACAO) === 'true'
+  } catch {
+    return false
+  }
+}
+
+export function definirEstacaoImpressao(ativo) {
+  localStorage.setItem(CHAVE_ESTACAO, String(ativo))
+}
+
 export async function carregarConfig() {
   try {
     return { ...CONFIG_PADRAO, ...(await apiFetch('/api/configuracoes')) }

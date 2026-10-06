@@ -1,51 +1,23 @@
-  // Função para enviar recibo ao backend para impressão
-  async function imprimirReciboBackend(recibo) {
-    try {
-      await fetch('/api/print', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(recibo),
-      });
-    } catch (err) {
-      alert('Erro ao enviar recibo para impressão!');
-    }
-  }
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import ReciboImpressao from '../components/ReciboImpressao'
-import { carregarConfig, CONFIG_PADRAO } from '../utils/configuracoes'
+import FilaImpressao from '../components/FilaImpressao'
+import { carregarConfig, CONFIG_PADRAO, apiFetch, ehEstacaoImpressao } from '../utils/configuracoes'
+import { listarProdutos, registrarVenda } from '../utils/dados'
 import '../print.css';
 
-function carregarProdutos() {
+async function carregarProdutos() {
   try {
-    const produtos = JSON.parse(localStorage.getItem('openfest_produtos')) || [];
-    // Garante que preco é sempre número
-    return produtos.map(p => ({ ...p, preco: Number(p.preco) || 0 }));
+    return await listarProdutos();
   } catch {
     return [];
-  }
-}
-
-function salvarVendas(vendas) {
-  try {
-    localStorage.setItem('openfest_vendas', JSON.stringify(vendas))
-  } catch (error) {
-    console.error('Erro ao salvar vendas:', error)
-  }
-}
-
-function carregarVendas() {
-  try {
-    return JSON.parse(localStorage.getItem('openfest_vendas')) || []
-  } catch {
-    return []
   }
 }
 
 export default function Caixa() {
   const [mostrarRecibo, setMostrarRecibo] = useState(false);
   const [reciboInfo, setReciboInfo] = useState({});
-  const [produtos, setProdutos] = useState(carregarProdutos)
+  const [produtos, setProdutos] = useState([])
   const [carrinho, setCarrinho] = useState([])
   const [carrinhoAberto, setCarrinhoAberto] = useState(false)
 
@@ -63,7 +35,8 @@ export default function Caixa() {
   }, [])
 
   useEffect(() => {
-    function onFocus() { setProdutos(carregarProdutos()) }
+    carregarProdutos().then(setProdutos)
+    function onFocus() { carregarProdutos().then(setProdutos) }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [])
@@ -123,18 +96,12 @@ export default function Caixa() {
       clearInterval(poolRef.current);
     }
     if (carrinho.length > 0) {
-      const venda = {
-        id: Date.now(),
-        data: new Date(),
-        itens: carrinho,
-        total: carrinho.reduce((acc, item) => acc + Number(item.preco) * Number(item.quantidade), 0),
-        vendedor: 'Sistema',
-        tipoPagamento,
-      };
-      const vendasAtuais = carregarVendas();
-      salvarVendas([...vendasAtuais, venda]);
+      // O banco registra a venda e baixa o estoque; depois recarrega a lista com os valores reais.
+      registrarVenda(carrinho, tipoPagamento)
+        .then(() => carregarProdutos().then(setProdutos))
+        .catch((err) => alert(`Pagamento confirmado, mas a venda não foi registrada no sistema: ${err.message}`));
 
-      // Atualizar estoque e bloquear produtos se necessário
+      // Atualiza a tela na hora, sem esperar o banco
       const produtosAtualizados = produtos.map(produto => {
         const itemCarrinho = carrinho.find(item => item.id === produto.id);
         if (itemCarrinho) {
@@ -147,7 +114,6 @@ export default function Caixa() {
         }
         return produto;
       });
-      localStorage.setItem('openfest_produtos', JSON.stringify(produtosAtualizados));
       setProdutos(produtosAtualizados);
 
       // Montar dados do recibo para impressão
@@ -180,8 +146,16 @@ export default function Caixa() {
         data: new Date().toLocaleString('pt-BR'),
         pagamento: tipoPagamento,
       };
+      // Fora da estação (ex.: celular), o cupom vai para a fila e sai na impressora do PC.
+      if (!ehEstacaoImpressao()) {
+        if (imprimir) {
+          apiFetch('/api/impressao', { method: 'POST', body: { recibo } })
+            .catch(() => alert('Venda concluída, mas não foi possível enviar o cupom para a impressora do PC.'));
+        }
+        concluirVenda();
+        return;
+      }
       setReciboInfo(recibo);
-      if (imprimir) imprimirReciboBackend(recibo);
     }
     setEtapa('confirmado');
   }
@@ -327,6 +301,8 @@ export default function Caixa() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
+
+      {ehEstacaoImpressao() && <FilaImpressao pausado={mostrarRecibo} />}
 
       {/* ─── Modal de Pagamento ─── */}
       {etapa !== 'idle' && (
