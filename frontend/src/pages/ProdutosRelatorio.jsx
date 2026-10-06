@@ -89,6 +89,16 @@ export default function ProdutosRelatorio() {
       });
   }, [filtroPedido, filtroData, filtroProduto, filtroQuantidade, filtroValor, filtroVendedor, vendasPlanas])
 
+  // No celular, uma busca única procura em todas as colunas.
+  const [buscaMobile, setBuscaMobile] = useState('')
+  const vendasMobile = useMemo(() => {
+    const termo = buscaMobile.trim().toLowerCase()
+    if (!termo) return vendasFiltradas
+    return vendasFiltradas.filter((item) =>
+      [item.idPedido, item.data, item.produto, item.quantidade, item.valor, item.vendedor]
+        .some((campo) => String(campo).toLowerCase().includes(termo))
+    )
+  }, [buscaMobile, vendasFiltradas])
 
 
   return (
@@ -159,7 +169,40 @@ export default function ProdutosRelatorio() {
                 <h2 className="text-lg font-semibold text-white">Relatório de vendas</h2>
                 <p className="mt-2 text-sm text-gray-400">Aqui estão as últimas vendas registradas com hora, produto e vendedor.</p>
 
-                <div className="mt-6 rounded-2xl border border-white/10 bg-gray-900 overflow-hidden">
+                {/* Celular: cartões com busca única */}
+                <div className="md:hidden mt-5 space-y-3">
+                  <input
+                    type="search"
+                    value={buscaMobile}
+                    onChange={(e) => setBuscaMobile(e.target.value)}
+                    placeholder="Buscar pedido, produto, data, vendedor..."
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-pink-400"
+                  />
+                  {vendasMobile.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-gray-400">Nenhum resultado encontrado.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-144 overflow-y-auto scrollbar-tema">
+                      {vendasMobile.map((venda, index) => (
+                        <div key={`${venda.idPedido}-${venda.data}-${index}`} className="rounded-xl border border-white/10 bg-gray-900 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium text-white wrap-break-word">{venda.produto}</p>
+                              <p className="mt-0.5 text-xs text-gray-400">Pedido {venda.idPedido} · {venda.data}</p>
+                            </div>
+                            <p className="shrink-0 font-semibold text-pink-400">{venda.valor}</p>
+                          </div>
+                          <div className="mt-3 flex justify-between text-xs text-gray-400">
+                            <span>Qtd: <span className="text-gray-200">{venda.quantidade}</span></span>
+                            <span>Vendedor: <span className="text-gray-200">{venda.vendedor}</span></span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Computador: tabela com filtro por coluna */}
+                <div className="hidden md:block mt-6 rounded-2xl border border-white/10 bg-gray-900 overflow-hidden">
                 <div className="overflow-x-auto overflow-y-auto max-h-144 pr-4 scrollbar-tema" style={{ width: '100%' }}>
                   <table className="w-full border-collapse border border-white/10 text-left text-sm text-gray-200" style={{ tableLayout: 'fixed' }}>
                     <thead className="bg-gray-950/70">
