@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
-import ReciboImpressao from '../components/ReciboImpressao'
-import FilaImpressao from '../components/FilaImpressao'
-import { carregarConfig, CONFIG_PADRAO, apiFetch, ehEstacaoImpressao } from '../utils/configuracoes'
+import { carregarConfig, CONFIG_PADRAO } from '../utils/configuracoes'
 import { listarProdutos, registrarVenda } from '../utils/dados'
 import { montarRecibo, enviarParaFila } from '../utils/recibo'
 import '../print.css';
@@ -28,8 +26,6 @@ async function carregarProdutos() {
 }
 
 export default function Caixa() {
-  const [mostrarRecibo, setMostrarRecibo] = useState(false);
-  const [reciboInfo, setReciboInfo] = useState({});
   const [produtos, setProdutos] = useState([])
   const [carrinho, setCarrinho] = useState([])
   const [carrinhoAberto, setCarrinhoAberto] = useState(false)
@@ -54,12 +50,6 @@ export default function Caixa() {
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [])
-
-  useEffect(() => {
-    if (etapa === 'confirmado' && reciboInfo.itens) {
-      setMostrarRecibo(true);
-    }
-  }, [etapa, reciboInfo]);
 
   const total = carrinho.reduce((acc, item) => acc + item.preco * item.quantidade, 0)
   const totalItens = carrinho.reduce((acc, item) => acc + item.quantidade, 0)
@@ -130,24 +120,14 @@ export default function Caixa() {
       });
       setProdutos(produtosAtualizados);
 
+      // Toda impressão (PC, celular, reimpressão) segue a mesma rota: fila -> estação de impressão.
       const config = configRef.current;
-      if (!config.imprimirAutomatico) {
-        concluirVenda();
-        return;
+      if (imprimir && config.imprimirAutomatico) {
+        enviarParaFila(montarRecibo({ itens: carrinho, config, pagamento: tipoPagamento }))
+          .catch(() => alert('Venda concluída, mas não foi possível enviar o cupom para a impressora.'));
       }
-      const recibo = montarRecibo({ itens: carrinho, config, pagamento: tipoPagamento });
-      // Fora da estação (ex.: celular), o cupom vai para a fila e sai na impressora do PC.
-      if (!ehEstacaoImpressao()) {
-        if (imprimir) {
-          enviarParaFila(recibo)
-            .catch(() => alert('Venda concluída, mas não foi possível enviar o cupom para a impressora do PC.'));
-        }
-        concluirVenda();
-        return;
-      }
-      setReciboInfo(recibo);
     }
-    setEtapa('confirmado');
+    concluirVenda();
   }
 
   function iniciarPolling(id, tipoPagamento = 'Dinheiro') {
@@ -230,8 +210,6 @@ export default function Caixa() {
     limparCarrinho();
     setCarrinhoAberto(false);
     fecharPagamento();
-    setMostrarRecibo(false);
-    setReciboInfo({});
   }
 
   // FILTRAGEM: Somente produtos não bloqueados aparecem no catálogo e estoque > 0
@@ -313,7 +291,6 @@ export default function Caixa() {
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
 
-      {ehEstacaoImpressao() && <FilaImpressao pausado={mostrarRecibo} />}
 
       {/* ─── Modal de Pagamento ─── */}
       {etapa !== 'idle' && (
@@ -327,7 +304,6 @@ export default function Caixa() {
                   {etapa === 'dinheiro' && 'Pagamento em Dinheiro'}
                   {etapa === 'aguardando_cartao' && 'Aguardando Cartão'}
                   {etapa === 'aguardando_pix' && 'Pague via PIX'}
-                  {etapa === 'confirmado' && 'Pagamento Confirmado'}
                 </h3>
                 {(etapa === 'escolha' || etapa === 'dinheiro') && (
                   <button onClick={fecharPagamento} className="text-gray-500 hover:text-white text-2xl leading-none">×</button>
@@ -413,16 +389,6 @@ export default function Caixa() {
                 </div>
               )}
 
-              {etapa === 'confirmado' && mostrarRecibo && reciboInfo.itens && (
-                <ReciboImpressao
-                  evento={reciboInfo.evento}
-                  itens={reciboInfo.itens}
-                  total={reciboInfo.total}
-                  data={reciboInfo.data}
-                  mensagem={reciboInfo.mensagem}
-                  onAfterPrint={concluirVenda}
-                />
-              )}
             </div>
           </div>
         </>

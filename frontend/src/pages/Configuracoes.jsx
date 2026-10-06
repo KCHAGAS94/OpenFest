@@ -208,7 +208,7 @@ export default function Configuracoes() {
                   <span>
                     <span className="block font-medium">Este aparelho é a estação de impressão</span>
                     <span className="block text-xs text-gray-500">
-                      Marque só no PC com a impressora e deixe o Caixa aberto nele. Cupons de outros aparelhos (celular) saem aqui. Vale só para este aparelho e salva na hora.
+                      Marque só no PC com a impressora e deixe o sistema aberto nele (em qualquer tela). Todos os cupons (vendas do PC, dos celulares e reimpressões) saem aqui. Vale só para este aparelho e salva na hora.
                     </span>
                   </span>
                   <input

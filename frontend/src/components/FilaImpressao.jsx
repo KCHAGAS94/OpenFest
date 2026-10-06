@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import ReciboImpressao from './ReciboImpressao'
-import { apiFetch } from '../utils/configuracoes'
+import { apiFetch, ehEstacaoImpressao, usuarioLogado, temPermissao } from '../utils/configuracoes'
+import '../print.css'
 
-// Na estação de impressão, busca os cupons enviados por outros aparelhos e imprime um por vez.
-// `pausado` evita imprimir junto com um cupom da própria estação.
-export default function FilaImpressao({ pausado }) {
+// Rota única de impressão: vendas (PC e celular) e reimpressões entram na fila do
+// backend, e a estação de impressão (PC) busca e imprime um cupom por vez, em qualquer tela.
+export default function FilaImpressao() {
   const [fila, setFila] = useState([])
   const atual = fila[0]
 
   useEffect(() => {
-    if (pausado || atual) return
+    if (atual) return
     const intervalo = setInterval(async () => {
+      // Só a estação, logada e com acesso ao Caixa, retira cupons da fila.
+      if (!ehEstacaoImpressao() || !usuarioLogado() || !temPermissao('caixa')) return
       try {
         const pendentes = await apiFetch('/api/impressao/pendentes')
         if (pendentes.length) setFila(pendentes)
@@ -19,11 +22,11 @@ export default function FilaImpressao({ pausado }) {
       }
     }, 2000)
     return () => clearInterval(intervalo)
-  }, [pausado, atual])
+  }, [atual])
 
   const proximo = useCallback(() => setFila((prev) => prev.slice(1)), [])
 
-  if (pausado || !atual) return null
+  if (!atual) return null
 
   const { recibo } = atual
   return (

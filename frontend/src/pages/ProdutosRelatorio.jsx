@@ -1,10 +1,8 @@
 import { useMemo, useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import ReciboImpressao from '../components/ReciboImpressao'
 import { listarProdutos, listarVendas } from '../utils/dados'
-import { carregarConfig, ehEstacaoImpressao } from '../utils/configuracoes'
+import { carregarConfig } from '../utils/configuracoes'
 import { montarRecibo, enviarParaFila } from '../utils/recibo'
-import '../print.css'
 
 export default function ProdutosRelatorio() {
   const [filtroPedido, setFiltroPedido] = useState('')
@@ -107,7 +105,6 @@ export default function ProdutosRelatorio() {
 
   // Pedido aberto ao tocar numa linha/cartão, com opção de reimprimir o pedido inteiro.
   const [pedidoAberto, setPedidoAberto] = useState(null)
-  const [reciboLocal, setReciboLocal] = useState(null)
   const [msgReimpressao, setMsgReimpressao] = useState({ tipo: '', texto: '' })
   const [reimprimindo, setReimprimindo] = useState(false)
 
@@ -129,13 +126,9 @@ export default function ProdutosRelatorio() {
         data: pedidoAberto.data,
         pagamento: pedidoAberto.tipoPagamento,
       })
-      if (ehEstacaoImpressao()) {
-        setReciboLocal(recibo)
-        setMsgReimpressao({ tipo: 'ok', texto: 'Pedido enviado para a impressora.' })
-      } else {
-        await enviarParaFila(recibo)
-        setMsgReimpressao({ tipo: 'ok', texto: 'Pedido enviado para a impressora do PC.' })
-      }
+      // Mesma rota da venda: fila -> estação de impressão.
+      await enviarParaFila(recibo)
+      setMsgReimpressao({ tipo: 'ok', texto: 'Pedido enviado para a impressora.' })
     } catch (err) {
       setMsgReimpressao({ tipo: 'erro', texto: err.message || 'Não foi possível reimprimir.' })
     } finally {
@@ -400,17 +393,6 @@ export default function ProdutosRelatorio() {
             </div>
           </div>
         </div>
-      )}
-
-      {reciboLocal && (
-        <ReciboImpressao
-          evento={reciboLocal.evento}
-          itens={reciboLocal.itens}
-          total={reciboLocal.total}
-          data={reciboLocal.data}
-          mensagem={reciboLocal.mensagem}
-          onAfterPrint={() => setReciboLocal(null)}
-        />
       )}
     </>
   )
