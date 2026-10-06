@@ -13,6 +13,11 @@ function formatarCentavos(texto) {
   return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Para a busca ignorar maiúsculas e acentos ("agua" encontra "Água").
+function normalizarTexto(texto) {
+  return String(texto).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
 async function carregarProdutos() {
   try {
     return await listarProdutos();
@@ -27,6 +32,7 @@ export default function Caixa() {
   const [produtos, setProdutos] = useState([])
   const [carrinho, setCarrinho] = useState([])
   const [carrinhoAberto, setCarrinhoAberto] = useState(false)
+  const [busca, setBusca] = useState('')
 
   // Pagamento
   const [etapa, setEtapa] = useState('idle')
@@ -252,7 +258,26 @@ export default function Caixa() {
   }
 
   // FILTRAGEM: Somente produtos não bloqueados aparecem no catálogo e estoque > 0
-  const produtosVisiveis = produtos.filter(p => !p.bloqueado && (p.estoque === undefined || p.estoque > 0));
+  const produtosDisponiveis = produtos.filter(p => !p.bloqueado && (p.estoque === undefined || p.estoque > 0));
+  const termoBusca = normalizarTexto(busca.trim());
+  const produtosVisiveis = termoBusca
+    ? produtosDisponiveis.filter(p => normalizarTexto(p.nome).includes(termoBusca))
+    : produtosDisponiveis;
+
+  const CampoBusca = (
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">🔍</span>
+      <input
+        type="search"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar produto..."
+        className="w-full bg-gray-900 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-pink-500"
+      />
+    </div>
+  );
+
+  const semResultado = termoBusca ? `Nenhum produto encontrado para "${busca.trim()}".` : 'Nenhum produto disponível no momento.';
 
   const PainelCarrinho = (
     <div className="flex flex-col h-full">
@@ -429,11 +454,12 @@ export default function Caixa() {
       {/* ─── Layout Principal ─── */}
       <div className="hidden md:flex max-w-7xl mx-auto px-6 py-8 gap-6" style={{ height: 'calc(100vh - 4rem)' }}>
         <section className="flex-1 flex flex-col min-h-0">
+          <div className="mb-5">{CampoBusca}</div>
           <h2 className="text-lg font-semibold mb-4 text-gray-200">Produtos disponíveis</h2>
           {produtosVisiveis.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl text-gray-600">
               <span className="text-4xl mb-3">🛍️</span>
-              <p className="text-sm">Nenhum produto disponível no momento.</p>
+              <p className="text-sm">{semResultado}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 overflow-y-auto pr-1">
@@ -452,8 +478,11 @@ export default function Caixa() {
 
       {/* ─── Mobile ─── */}
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
-        <section className="flex-1 overflow-y-auto px-4 pt-4 pb-24">
+        <section className="flex-1 overflow-y-auto px-4 pb-24">
+          {/* A busca fica presa no topo enquanto a lista rola */}
+          <div className="sticky top-0 z-10 bg-gray-950 pt-4 pb-3">{CampoBusca}</div>
           <h2 className="text-base font-semibold mb-3 text-gray-200">Produtos disponíveis</h2>
+          {produtosVisiveis.length === 0 && <p className="text-sm text-gray-600 text-center mt-8">{semResultado}</p>}
           <div className="grid grid-cols-2 gap-3">
             {produtosVisiveis.map((produto) => (
               <button key={produto.id} onClick={() => adicionarItem(produto)} className="bg-gray-900 border border-white/10 rounded-xl p-4 text-left active:scale-95">
