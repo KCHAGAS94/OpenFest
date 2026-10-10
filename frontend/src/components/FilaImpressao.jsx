@@ -3,6 +3,8 @@ import ReciboImpressao from './ReciboImpressao'
 import { apiFetch, ehEstacaoImpressao, usuarioLogado, temPermissao } from '../utils/configuracoes'
 import '../print.css'
 
+const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 // Rota única de impressão: vendas (PC e celular) e reimpressões entram na fila do
 // backend, e a estação de impressão (PC) busca e imprime um cupom por vez, em qualquer tela.
 export default function FilaImpressao() {
@@ -11,17 +13,29 @@ export default function FilaImpressao() {
 
   useEffect(() => {
     if (atual) return
-    const intervalo = setInterval(async () => {
-      // Só a estação, logada e com acesso ao Caixa, retira cupons da fila.
-      if (!ehEstacaoImpressao() || !usuarioLogado() || !temPermissao('caixa')) return
-      try {
-        const pendentes = await apiFetch('/api/impressao/pendentes')
-        if (pendentes.length) setFila(pendentes)
-      } catch {
-        // Tenta de novo no próximo ciclo.
+    const controle = new AbortController()
+
+    // Long polling: o backend segura a requisição até chegar um cupom, então
+    // a impressão sai na hora; ao voltar vazia, já pede de novo.
+    async function aguardarCupons() {
+      while (!controle.signal.aborted) {
+        // Só a estação, logada e com acesso ao Caixa, retira cupons da fila.
+        if (!ehEstacaoImpressao() || !usuarioLogado() || !temPermissao('caixa')) {
+          await esperar(2000)
+          continue
+        }
+        try {
+          const pendentes = await apiFetch('/api/impressao/pendentes', { signal: controle.signal })
+          if (pendentes.length) return setFila(pendentes)
+        } catch {
+          // Backend fora do ar: tenta de novo em instantes.
+          await esperar(2000)
+        }
       }
-    }, 2000)
-    return () => clearInterval(intervalo)
+    }
+
+    aguardarCupons()
+    return () => controle.abort()
   }, [atual])
 
   const proximo = useCallback(() => setFila((prev) => prev.slice(1)), [])

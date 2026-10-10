@@ -8,6 +8,18 @@ import { authMiddleware, requirePermissao } from '../middlewares/auth.js'
 const fila = []
 let proximoId = 1
 
+// Long polling: a estação deixa uma requisição aberta e recebe o cupom assim
+// que ele chega, sem esperar o próximo ciclo de consulta.
+const ESPERA_MAXIMA_MS = 25000
+const aguardando = new Set()
+
+function entregarPendentes() {
+  for (const entregar of aguardando) {
+    if (!fila.length) return
+    entregar()
+  }
+}
+
 const router = Router()
 
 router.use(authMiddleware)
@@ -37,13 +49,30 @@ router.post('/', podeEnviarCupom, async (req, res) => {
   fila.push({ id: proximoId++, recibo: { ...recibo, vendedor } })
   console.log(`[impressão] cupom recebido de ${req.user.email} (${fila.length} na fila)`)
   res.status(201).json({ ok: true })
+  entregarPendentes()
 })
 
-// A estação retira todos os pendentes de uma vez para imprimir.
+// A estação retira todos os pendentes de uma vez para imprimir. Com a fila
+// vazia, a resposta fica aberta até chegar um cupom ou passar a espera máxima.
 router.get('/pendentes', requirePermissao('caixa'), (req, res) => {
-  const pendentes = fila.splice(0, fila.length)
-  if (pendentes.length) console.log(`[impressão] estação (${req.user.email}) retirou ${pendentes.length} cupom(ns)`)
-  res.json(pendentes)
+  let timer
+  function responder() {
+    clearTimeout(timer)
+    aguardando.delete(responder)
+    const pendentes = fila.splice(0, fila.length)
+    if (pendentes.length) console.log(`[impressão] estação (${req.user.email}) retirou ${pendentes.length} cupom(ns)`)
+    res.json(pendentes)
+  }
+
+  if (fila.length) return responder()
+
+  timer = setTimeout(responder, ESPERA_MAXIMA_MS)
+  aguardando.add(responder)
+  // Estação fechou a aba ou recarregou: não entrega cupons para uma conexão morta.
+  res.on('close', () => {
+    clearTimeout(timer)
+    aguardando.delete(responder)
+  })
 })
 
 export default router

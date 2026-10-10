@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 
 export default function ReciboImpressao({ evento, itens, total, data, mensagem = 'Obrigado pela preferência!', vendedor, onAfterPrint }) {
   useEffect(() => {
+    // Pequena folga para o navegador desenhar o cupom antes de imprimir.
     const timer = setTimeout(() => {
       window.print();
-    }, 500);
+    }, 150);
 
     const handleAfterPrint = () => {
       if (onAfterPrint) onAfterPrint();
