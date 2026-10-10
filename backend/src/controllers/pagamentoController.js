@@ -67,6 +67,10 @@ const TOLERANCIA_VALOR = 0.01
 const FOLGA_INICIO_MS = 30_000
 // Limite para um "desde" muito antigo não pegar pagamentos de outras vendas.
 const JANELA_MAXIMA_MS = 15 * 60_000
+// A busca do Mercado Pago alterna entre fontes, e em boa parte das respostas
+// os pagamentos da maquininha (POINT) não vêm. Várias buscas em paralelo,
+// juntando os resultados, quase sempre trazem o pagamento já na primeira checagem.
+const BUSCAS_PARALELAS = 4
 // Pagamentos que já confirmaram uma venda não confirmam outra (ex.: dois celulares, mesmo valor).
 const pagamentosUsados = new Set()
 
@@ -78,7 +82,8 @@ export async function verificarPagamentoRecente(req, res) {
     return res.status(400).json({ message: 'O valor da transação é obrigatório e deve ser maior que zero.' })
   }
 
-  const paymentTypeId = tipo === 'credito' ? 'credit_card' : 'debit_card'
+  // Débito de banco digital costuma vir da maquininha como prepaid_card.
+  const tiposAceitos = tipo === 'credito' ? ['credit_card'] : ['debit_card', 'prepaid_card']
   const agora = Date.now()
   const inicioEspera = Number(desde) || agora
   const inicioBusca = Math.max(inicioEspera - FOLGA_INICIO_MS, agora - JANELA_MAXIMA_MS)
@@ -92,27 +97,34 @@ export async function verificarPagamentoRecente(req, res) {
       range: 'date_created',
       begin_date: beginDate,
       end_date: endDate,
+      limit: '100',
     })
 
-    const resposta = await fetch(
-      `https://api.mercadopago.com/v1/payments/search?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-        },
-      }
+    const respostas = await Promise.all(
+      Array.from({ length: BUSCAS_PARALELAS }, async () => {
+        const resposta = await fetch(
+          `https://api.mercadopago.com/v1/payments/search?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+            },
+          }
+        )
+        return { ok: resposta.ok, status: resposta.status, data: await resposta.json() }
+      })
     )
 
-    const data = await resposta.json()
-
-    if (!resposta.ok) {
+    const validas = respostas.filter(r => r.ok)
+    if (!validas.length) {
+      const { status, data } = respostas[0]
       console.error('Erro ao buscar pagamentos recentes:', data)
-      return res.status(resposta.status).json({ message: data.message || 'Erro ao consultar pagamentos.', detalhe: data })
+      return res.status(status).json({ message: data.message || 'Erro ao consultar pagamentos.', detalhe: data })
     }
 
-    const pagamentoEncontrado = (data.results || []).find(p =>
+    const pagamentos = validas.flatMap(r => r.data.results || [])
+    const pagamentoEncontrado = pagamentos.find(p =>
       p.status === 'approved' &&
-      p.payment_type_id === paymentTypeId &&
+      tiposAceitos.includes(p.payment_type_id) &&
       !pagamentosUsados.has(p.id) &&
       Math.abs(Number(p.transaction_amount) - valorNumerico) <= TOLERANCIA_VALOR
     )
