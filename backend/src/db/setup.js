@@ -59,6 +59,10 @@ export async function prepararBanco() {
       tipo           TEXT          NOT NULL DEFAULT 'unidade',
       unidades_combo INTEGER
     );
+
+    -- A tabela antiga itens_venda (sistema anterior) prendia os produtos com
+    -- ON DELETE RESTRICT; sem essa trava os produtos podem ser excluídos.
+    ALTER TABLE IF EXISTS itens_venda DROP CONSTRAINT IF EXISTS "itens_venda_produtoId_fkey";
   `)
 
   const { rows } = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios_sistema')

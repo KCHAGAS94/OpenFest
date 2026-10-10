@@ -80,10 +80,6 @@ export async function excluirProduto(req, res) {
     if (rowCount === 0) return res.status(404).json({ message: 'Produto não encontrado.' })
     res.json({ ok: true })
   } catch (err) {
-    // A tabela antiga itens_venda impede excluir produtos usados em vendas antigas.
-    if (err.code === '23503') {
-      return res.status(409).json({ message: 'Este produto tem vendas antigas registradas e não pode ser excluído. Bloqueie-o no lugar.' })
-    }
     console.error('Erro ao excluir produto:', err)
     res.status(500).json({ message: 'Erro ao excluir produto.' })
   }
