@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function ReciboImpressao({ evento, itens, total, data, mensagem = 'Obrigado pela preferência!', onAfterPrint }) {
+export default function ReciboImpressao({ evento, itens, total, data, mensagem = 'Obrigado pela preferência!', vendedor, onAfterPrint }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       window.print();
@@ -117,6 +117,13 @@ export default function ReciboImpressao({ evento, itens, total, data, mensagem =
             </div>
           </div>
         ))
+      )}
+
+      {/* Rodapé com o vendedor: separa os pedidos quando vários celulares vendem ao mesmo tempo */}
+      {vendedor && (
+        <div className="texto-detalhe" style={{ width: '60mm', textAlign: 'center', fontSize: '11px', paddingTop: '1mm' }}>
+          Vendedor: {vendedor}
+        </div>
       )}
     </div>
   );

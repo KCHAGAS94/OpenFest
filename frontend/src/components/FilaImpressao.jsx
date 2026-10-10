@@ -37,6 +37,7 @@ export default function FilaImpressao() {
       total={recibo.total}
       data={recibo.data}
       mensagem={recibo.mensagem}
+      vendedor={recibo.vendedor}
       onAfterPrint={proximo}
     />
   )

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import pool from '../db/pool.js'
 import { authMiddleware, requirePermissao } from '../middlewares/auth.js'
 
 // Fila de cupons enviados por outros aparelhos (ex.: celular) para a estação
@@ -20,12 +21,20 @@ function podeEnviarCupom(req, res, next) {
   next()
 }
 
-router.post('/', podeEnviarCupom, (req, res) => {
+router.post('/', podeEnviarCupom, async (req, res) => {
   const { recibo } = req.body
   if (!recibo?.itens?.length) {
     return res.status(400).json({ message: 'Cupom sem itens.' })
   }
-  fila.push({ id: proximoId++, recibo })
+  // Nome de quem enviou sai no fim da impressão, separando os pedidos de cada vendedor.
+  let vendedor = req.user.email
+  try {
+    const { rows } = await pool.query('SELECT nome FROM usuarios_sistema WHERE id = $1', [req.user.id])
+    if (rows[0]?.nome) vendedor = rows[0].nome
+  } catch {
+    // Sem o nome, imprime com o e-mail.
+  }
+  fila.push({ id: proximoId++, recibo: { ...recibo, vendedor } })
   console.log(`[impressão] cupom recebido de ${req.user.email} (${fila.length} na fila)`)
   res.status(201).json({ ok: true })
 })
