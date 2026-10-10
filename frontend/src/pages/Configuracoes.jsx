@@ -54,6 +54,11 @@ export default function Configuracoes() {
   const [salvandoUsuario, setSalvandoUsuario] = useState(false)
   const [carregando, setCarregando] = useState(true)
 
+  const [zerar, setZerar] = useState({ vendas: true, produtos: false, usuarios: false })
+  const [confirmacaoZerar, setConfirmacaoZerar] = useState('')
+  const [msgZerar, setMsgZerar] = useState({ tipo: '', texto: '' })
+  const [zerando, setZerando] = useState(false)
+
   const logado = usuarioLogado()
 
   useEffect(() => {
@@ -147,6 +152,25 @@ export default function Configuracoes() {
       setMsgImportacao({ tipo: 'erro', texto: err.message })
     } finally {
       setImportando(false)
+    }
+  }
+
+  async function zerarDados() {
+    const nomes = { vendas: 'vendas', produtos: 'produtos', usuarios: 'usuários (exceto você)' }
+    const selecionados = Object.keys(nomes).filter((chave) => zerar[chave]).map((chave) => nomes[chave])
+    if (!window.confirm(`Apagar definitivamente: ${selecionados.join(', ')}? Não dá para desfazer.`)) return
+
+    setZerando(true)
+    setMsgZerar({ tipo: '', texto: '' })
+    try {
+      await apiFetch('/api/configuracoes/zerar', { method: 'POST', body: zerar })
+      if (zerar.usuarios) setUsuarios((prev) => prev.filter((u) => u.id === logado?.id))
+      setConfirmacaoZerar('')
+      setMsgZerar({ tipo: 'ok', texto: `Zerado: ${selecionados.join(', ')}.` })
+    } catch (err) {
+      setMsgZerar({ tipo: 'erro', texto: err.message })
+    } finally {
+      setZerando(false)
     }
   }
 
@@ -322,6 +346,52 @@ export default function Configuracoes() {
                 ))}
               </div>
             </Secao>
+
+            <section className="bg-gray-900 border border-red-500/30 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-red-400">Zerar dados</h2>
+              <p className="text-sm text-gray-500 mb-5">
+                Apaga do banco o que for marcado, para começar um novo evento. Não dá para desfazer.
+              </p>
+
+              <div className="flex flex-wrap gap-3 mb-4">
+                {[
+                  { chave: 'vendas', label: 'Vendas', detalhe: 'relatório e numeração dos pedidos' },
+                  { chave: 'produtos', label: 'Produtos', detalhe: 'cadastro e estoque' },
+                  { chave: 'usuarios', label: 'Usuários', detalhe: 'menos você' },
+                ].map(({ chave, label, detalhe }) => (
+                  <label key={chave} className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={zerar[chave]}
+                      onChange={() => setZerar((prev) => ({ ...prev, [chave]: !prev[chave] }))}
+                      className="accent-red-500"
+                    />
+                    {label}
+                    <span className="text-xs text-gray-500">({detalhe})</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  value={confirmacaoZerar}
+                  onChange={(e) => setConfirmacaoZerar(e.target.value)}
+                  placeholder="Digite ZERAR para confirmar"
+                  className={`${inputClass} sm:max-w-xs focus:border-red-500`}
+                />
+                <button
+                  onClick={zerarDados}
+                  disabled={zerando || confirmacaoZerar.trim().toUpperCase() !== 'ZERAR' || !Object.values(zerar).some(Boolean)}
+                  className="shrink-0 px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-40 rounded-xl font-semibold transition-colors"
+                >
+                  {zerando ? 'Zerando...' : 'Zerar selecionados'}
+                </button>
+              </div>
+
+              <div className="mt-3">
+                <Aviso tipo={msgZerar.tipo}>{msgZerar.texto}</Aviso>
+              </div>
+            </section>
           </>
         )}
       </main>
